@@ -1,0 +1,18 @@
+[
+    {
+                "id": 1,
+                "name": "Aditya",
+                "description" : "We would like to remind you that if any staff member is feeling unwell or has flu like symptoms (runny nose, cough, etc..) ",
+                "date" : "Mar 7",
+                "tabtype" : "Inbox",
+                "labeltype": ""
+            },
+            {
+                "id": 2,
+                "name": "Kaushika",
+                "description" : "We would like to remind you that if any staff member is feeling unwell or has flu like symptoms (runny nose, cough, etc..) ",
+                "date" : "Mar 6",
+                "tabtype" : "Trash",
+                "labeltype": ""
+            }
+]

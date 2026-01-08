@@ -1,0 +1,90 @@
+:root {
+
+    /* #f25630 in decimal RGB */
+  --main-color: rgb(188 61 61);
+  
+  /*gold color prev used*/
+  --gold-color: rgb(228,197,144);
+  
+  /* #ffffff in decimal RGB */
+  --white-color:rgb(255,255,255);
+    
+  /* #a7a7a7 in decimal RGB */
+  --color-one: rgb(167,167,167);
+
+   /* #0e0d0b in decimal RGB */
+  --color-two: rgb(14,13,11);
+
+  /* #595653 in decimal RGB */
+  --color-three: rgb(89,86,83);
+
+  /* #171819 in decimal RGB */
+  --color-four: rgb(23,24,25);
+
+  /* #0e0d0c in decimal RGB */
+  --color-five: rgb(14,13,12);
+
+  /* #1a1b1c in decimal RGB */
+  --color-six: rgb(26,27,28);
+
+  /* #151616 in decimal RGB */
+  --color-seven: rgb(21,22,22);
+
+  /* #121111 in decimal RGB */
+  --color-eight: rgb(18,17,17);
+  
+  /* #ffffff in decimal RGBA */
+  --white-color-opacity:rgba(255,255,255,0.80);
+  
+  /* #ffffff in decimal RGBA Two */
+  --white-color-opacity-two:rgba(255,255,255,0.60);
+
+  /* #ffffff in decimal RGBA Three */
+  --white-color-opacity-three:rgba(255,255,255,0.40);
+
+  /* #ffffff in decimal RGBA Four */
+  --white-color-opacity-four:rgba(255,255,255,0.20);
+
+  /* #ffffff in decimal RGBA Five */
+  --white-color-opacity-five:rgba(255,255,255,0.10);
+  
+  /* #000000 in decimal RGB */
+  --black-color:rgb(0,0,0);
+  
+  /* #000000 in decimal RGBA one */
+  --black-color-opacity:rgba(0,0,0,0.80);
+  
+  /* #000000 in decimal RGBA two */
+  --black-color-opacity-two:rgba(0,0,0,0.60);
+
+  /* #000000 in decimal RGBA Three */
+  --black-color-opacity-three:rgba(0,0,0,0.40);
+
+  /* #000000 in decimal RGBA Four */
+  --black-color-opacity-four:rgba(0,0,0,0.20);
+
+  /* #000000 in decimal RGBA Five */
+  --black-color-opacity-five:rgba(0,0,0,0.10);
+  
+  /* #ffffff in decimal RGB */
+  --text-color:rgb(255,255,255);
+  
+  /* #010101 Heading Color in decimal RGB */
+  --heading-color:rgb(255,255,255);
+
+  /* #171819 Body Bg Color in decimal RGB */
+  --body-bg-color:rgb(23,24,25);
+  
+  /* Fonts Variable - Updated for consistency */
+  --font-family-DMsans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  
+  --font-family-Forum: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  
+  /* Global Font Settings for Consistency */
+  --base-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --base-font-size: 14px;
+  --base-line-height: 1.5;
+  --base-font-weight: 400;
+
+  
+}

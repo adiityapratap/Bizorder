@@ -1,0 +1,252 @@
+# ================================
+# BizOrder Project .gitignore
+# ================================
+
+# ==============================================================================
+# VENDOR & DEPENDENCIES (NEVER COMMIT THESE!)
+# ==============================================================================
+vendor/
+*/vendor/
+application/vendor/
+export/vendor/
+External/vendor/
+login-assets/manager/vendor/
+
+# Node.js dependencies
+node_modules/
+*/node_modules/
+tailwind/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Composer files (keep composer.json, ignore lock in some cases)
+# composer.lock  # Uncomment if you want to ignore composer.lock
+
+# ==============================================================================
+# LOGS & CACHE (NEVER COMMIT THESE!)
+# ==============================================================================
+# Application logs
+application/logs/
+*/logs/
+log/
+logs/
+*.log
+
+# Cache directories
+application/cache/
+*/cache/
+cache/
+tmp/
+temp/
+
+# Error logs
+error_log
+*/error_log
+
+# ==============================================================================
+# CONFIGURATION & SENSITIVE FILES (CRITICAL!)
+# ==============================================================================
+# Database configuration (NEVER COMMIT!)
+application/config/database.php
+*/config/database.php
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+*.env
+
+# Configuration files with sensitive data
+application/config/config.php
+# Uncomment above if it contains sensitive keys/passwords
+
+# ==============================================================================
+# UPLOADS & USER GENERATED CONTENT
+# ==============================================================================
+uploaded_files/
+*/uploaded_files/
+uploads/
+*/uploads/
+
+# Bulk invoices and generated PDFs
+application/BULK\ INVOICES/
+BULK\ INVOICES/
+*.pdf
+
+# User generated images
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+# But keep essential theme/template images by adding exceptions:
+!theme-assets/**/*.png
+!theme-assets/**/*.jpg
+!theme-assets/**/*.jpeg
+!theme-assets/**/*.svg
+!mainWebsiteAssets/**/*.png
+!mainWebsiteAssets/**/*.jpg
+!mainWebsiteAssets/**/*.jpeg
+
+# ==============================================================================
+# IDE & EDITOR FILES
+# ==============================================================================
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# PhpStorm / IntelliJ
+.idea/
+*.iml
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Atom
+.atom/
+
+# ==============================================================================
+# OPERATING SYSTEM FILES
+# ==============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+__MACOSX/
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.nfs*
+
+# ==============================================================================
+# PHP SPECIFIC
+# ==============================================================================
+# PHP CS Fixer
+.php_cs.cache
+.php-cs-fixer.cache
+
+# PHPUnit
+.phpunit.result.cache
+phpunit.xml
+coverage/
+
+# Composer
+composer.phar
+
+# ==============================================================================
+# WEB SERVER & DEPLOYMENT
+# ==============================================================================
+# Apache
+.htaccess.backup
+.htaccess.bak
+
+# Nginx
+nginx.conf.backup
+
+# PHP ini files (may contain sensitive info)
+php.ini.backup
+php.ini.local
+
+# ==============================================================================
+# DEVELOPMENT & BUILD FILES
+# ==============================================================================
+# Sass
+.sass-cache/
+*.css.map
+
+# Build directories
+build/
+dist/
+public/build/
+
+# ==============================================================================
+# BACKUP & TEMPORARY FILES
+# ==============================================================================
+# Backup files
+*.backup
+*.bak
+*.old
+*.orig
+*.tmp
+*~
+
+# Archive files (unless needed)
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# ==============================================================================
+# PROJECT SPECIFIC EXCLUSIONS
+# ==============================================================================
+# Database dumps (keep structure, ignore data)
+*.sql
+!schema.sql  # Keep database schema if you have one
+
+# CGI-BIN (usually not needed in git)
+cgi-bin/
+*/cgi-bin/
+
+# Third party libraries already in vendor
+application/third_party/phpmailer.zip
+application/third_party/MX.zip
+
+# Writable directories with dynamic content
+export/writable/
+*/writable/
+
+# ==============================================================================
+# SECURITY & SENSITIVE DATA
+# ==============================================================================
+# SSH keys
+*.pem
+*.key
+*.crt
+*.p12
+
+# API keys and secrets
+secrets.php
+keys.php
+credentials.php
+
+# ==============================================================================
+# EXCEPTIONS (Files to KEEP in git)
+# ==============================================================================
+# Keep important config templates
+!application/config/config.sample.php
+!application/config/database.sample.php
+
+# Keep empty directories with .gitkeep
+!.gitkeep
+
+# Keep essential system files
+!system/
+!application/system/
+!index.php
+!.htaccess
+
+# Keep theme assets (uncomment if needed)
+# !theme-assets/
+# !mainWebsiteAssets/
+
+# ==============================================================================
+# END OF .gitignore
+# ==============================================================================

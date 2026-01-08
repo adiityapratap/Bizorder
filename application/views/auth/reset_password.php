@@ -1,0 +1,97 @@
+<div class="auth-page-wrapper">
+        <!-- auth page bg -->
+        <div class="auth-one-bg-position auth-one-bg-none" id="auth-particles" style="background-color: #0d6efd;">
+            <div class="bg-overlay"></div>
+
+            <div class="shape">
+                <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1440 120">
+                    <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- auth page content -->
+        <div class="auth-page-content">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="text-center mt-sm-5 mb-4 text-white-50">
+                            <div>
+                                <a href="/" class="d-inline-block auth-logo">
+                                    <img src="/theme-assets/images/logo/BizAdminLogo_White.png" alt="" height="60" width="160">
+                                </a>
+                            </div>
+                           
+                        </div>
+                    </div>
+                </div>
+                <!-- end row -->
+
+                <div class="row justify-content-center">
+                    <div class="col-md-8 col-lg-6 col-xl-5">
+                        <div class="card mt-4">
+
+                            <div class="card-body p-4">
+                                
+                                <div class="text-center mt-2">
+                                  
+                                    <lord-icon src="https://cdn.lordicon.com/rqqkvjqf.json" trigger="loop" colors="primary:#272a54" class="avatar-xl">
+                                    </lord-icon>
+
+                                </div>
+
+                             
+                                <div class="p-2">
+                                   <?php echo form_open('auth/reset_password/' . $code);?>
+                                        
+                                       <div class="mb-4">
+                                            <label class="form-label ">New Password</label>
+                                            <input type="text" class="form-control" id="new" name="new" placeholder="Enter password">
+                                        </div>
+                                        
+                                        <div class="mb-4">
+                                            <label class="form-label">Confirm New Password:</label>
+                                            <input type="text" class="form-control" id="new_confirm" name="new_confirm" placeholder="Confirm password">
+                                        </div>
+                                             
+                                  <div id="infoMessage"><?php echo $message;?></div>
+                                        <div class="text-center mt-4">
+                                     
+                                            <button class="btn btn-success w-100" type="submit">Reset Password</button>
+                                        </div>
+                                       
+                                        <?php echo form_input($user_id);?>
+                                     <?php echo form_hidden($csrf); ?>
+                                    <?php echo form_close();?>
+                                </div>
+                            </div>
+                            <!-- end card body -->
+                        </div>
+                      
+
+                       
+
+                    </div>
+                </div>
+                <!-- end row -->
+            </div>
+            <!-- end container -->
+        </div>
+        <!-- end auth page content -->
+
+    </div>
+    <!-- end auth-page-wrapper -->
+
+ <style>
+ #infoMessage p{
+     color: red !important;
+ }
+ </style>
+
+    <!-- particles js -->
+    <script src="/theme-assets/libs/particles.js/particles.js"></script>
+
+    <!-- particles app js -->
+    <script src="/theme-assets/js/pages/particles.app.js"></script>
+
+

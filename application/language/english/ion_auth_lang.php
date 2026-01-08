@@ -1,0 +1,78 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+/**
+* Name:  Ion Auth Lang - English
+*
+* Author: Ben Edmunds
+*         ben.edmunds@gmail.com
+*         @benedmunds
+*
+* Location: https://github.com/benedmunds/CodeIgniter-Ion-Auth
+*
+* Created:  03.14.2010
+*
+* Description:  English language file for Ion Auth messages and errors
+*
+*/
+
+// Account Creation
+$lang['account_creation_successful']            = 'Account Successfully Created';
+$lang['account_creation_unsuccessful']          = 'Unable to Create Account';
+$lang['account_creation_duplicate_email']       = 'Email Already Used or Invalid';
+$lang['account_creation_duplicate_identity']    = 'Identity Already Used or Invalid';
+$lang['database_connectivity_issue']    = 'Seems something wrong with server connection, Please refresh the url again.';
+$lang['account_creation_missing_default_group'] = 'Default role is not set';
+$lang['account_creation_invalid_default_group'] = 'Invalid default group name set';
+
+
+// Password
+$lang['password_change_successful']          = 'Password Successfully Changed';
+$lang['password_change_unsuccessful']        = 'Unable to Change Password';
+$lang['forgot_password_successful']          = 'Password Reset Link has been sent your email address';
+$lang['forgot_password_unsuccessful']        = 'Unable to email the Reset Password link, please contact your manager for further assistance';
+
+// Activation
+$lang['activate_successful']                 = 'Account Activated';
+$lang['activate_unsuccessful']               = 'Unable to Activate Account';
+$lang['deactivate_successful']               = 'Account De-Activated';
+$lang['deactivate_unsuccessful']             = 'Unable to De-Activate Account';
+$lang['activation_email_successful']         = 'Activation Email Sent. Please check your inbox or spam';
+$lang['activation_email_unsuccessful']       = 'Unable to Send Activation Email';
+$lang['deactivate_current_user_unsuccessful']= 'You cannot De-Activate your self.';
+
+// Login / Logout
+$lang['login_successful']                    = 'Logged In Successfully';
+$lang['login_unsuccessful']                  = 'Incorrect Login';
+$lang['wrong_url']                  =         'Please check Url, seems Incorrect !';
+$lang['login_unsuccessful_not_active']       = 'The email address entered is inactive, please contact your manager for further assistance.';
+$lang['login_timeout']                       = 'Temporarily Locked Out.  Try again later.';
+$lang['logout_successful']                   = 'Logged Out Successfully';
+
+// Account Changes
+$lang['update_successful']                   = 'Account Information Successfully Updated';
+$lang['update_unsuccessful']                 = 'Unable to Update Account Information';
+$lang['delete_successful']                   = 'User Deleted';
+$lang['delete_unsuccessful']                 = 'Unable to Delete User';
+
+// Groups
+$lang['group_creation_successful']           = 'Role created Successfully';
+$lang['group_already_exists']                = 'This role already exists';
+$lang['user_already_exists']                = 'This user already exists';
+$lang['group_update_successful']             = 'Role details updated';
+$lang['group_delete_successful']             = 'Role deleted';
+$lang['group_delete_unsuccessful']           = 'Unable to delete role';
+$lang['group_delete_notallowed']             = 'Can\'t delete the administrators\' role';
+$lang['group_name_required']                 = 'Role name is a required field';
+$lang['group_name_admin_not_alter']          = 'Admin Role name can not be changed';
+
+// Activation Email
+$lang['email_activation_subject']            = 'Account Activation';
+$lang['email_activate_heading']              = 'Activate account for %s';
+$lang['email_activate_subheading']           = 'Please click this link to %s.';
+$lang['email_activate_link']                 = 'Activate Your Account';
+
+// Forgot Password Email
+$lang['email_forgotten_password_subject']    = 'Forgotten Password Verification';
+$lang['email_forgot_password_heading']       = 'Reset Password for %s';
+$lang['email_forgot_password_subheading']    = 'Please click this link to %s.';
+$lang['email_forgot_password_link']          = 'Reset Your Password';
+

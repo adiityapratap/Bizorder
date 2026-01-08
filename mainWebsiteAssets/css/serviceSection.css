@@ -1,0 +1,116 @@
+.monitor-services .service-item {
+    display: flex;
+    align-items: flex-start;
+    /*margin-bottom: 30px;*/
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 25px;
+    width: 440px;
+    max-width: 100%;
+    opacity: .7;
+}
+.elementor-2004 .elementor-element.elementor-element-879d041 {
+    --container-widget-width: 100%;
+    --container-widget-flex-grow: 0;
+    width: var( --container-widget-width,100% );
+    max-width: 100%;
+}
+.monitor-services .service-icon {
+    margin-right: 15px;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f8f8;
+    border-radius: 50%;
+}
+.monitor-services .service-item {
+    cursor: pointer;
+}
+.monitor-services .service-details {
+    flex: 1;
+}
+h3:not(.custom_font), .h3 {
+    font-size: 16px;
+    line-height: 32px;
+    text-transform: none;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+}
+.monitor-services h3 {
+    margin-bottom: 15px;
+    color: #000000 !important;
+}
+.monitor-services .service-description {
+    font-size: 16px;
+    line-height: 26px;
+}
+.monitor-services .service-item.active {
+    background: #fff;
+    opacity: 1;
+    box-shadow: 0 5px 20px rgba(18,2,47,.15);
+}
+.elementor-2004 .elementor-element.elementor-element-879d041 .monitor-services .ipad-wrapper {
+    width: 900px;
+    height: 560px;
+}
+.monitor-services .ipad-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 916px;
+    height: 576px;
+    border: 8px solid #12022f;
+    margin-left: 90px;
+    filter: drop-shadow(0px 5px 20px rgba(18,2,47,0.15));
+    border-radius: 10px;
+    overflow: hidden;
+}
+.monitor-services .main-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+.monitor-services .main-image {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+    overflow-x: scroll;
+    scroll-behavior: smooth;
+    height: 100%;
+}
+.monitor-services .service-image {
+    flex-shrink: 0;
+    width: 100%;
+    height: 100%;
+}
+.monitor-services .service-image {
+    flex-shrink: 0;
+    width: 100%;
+    height: 100%;
+}
+.monitor-services .main-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    transition: transform .5s ease-in-out;
+}
+.elementor img {
+    height: auto;
+    max-width: 100%;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+.monitor-services .services-list {
+    max-width: 440px;
+}
+.monitor-services {
+    display: flex;
+    align-items: center;
+}

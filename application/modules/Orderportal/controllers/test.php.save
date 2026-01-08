@@ -1,0 +1,33 @@
+
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Test extends MX_Controller {
+
+    public function __construct() {
+        parent::__construct();
+        $this->load->database(); // Load database
+    }
+
+    // URL: yourdomain.com/Orderportal/test/update_password
+    public function update_password() {
+        // Target username or email
+        $identifier = 'chef@gmail.com';
+        
+        // New password (hashed)
+        $new_password = password_hash('newpassword123', PASSWORD_BCRYPT);
+
+        // Update query
+        $this->db->set('password', $new_password);
+        $this->db->where('username', $identifier);
+        $this->db->or_where('email', $identifier);
+        $this->db->update('global_user');
+
+        if ($this->db->affected_rows() > 0) {
+            echo "Password updated successfully for user/email: {$identifier}";
+        } else {
+            echo "No matching user found or password unchanged.";
+        }
+    }
+}
+
