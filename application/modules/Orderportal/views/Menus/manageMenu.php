@@ -430,10 +430,40 @@ label span[style*="color: #ef4444"] {
                                                         
                                                     </select>
                                                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-                                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                                        <i class="fa-solid fa-chevron-down text-xs" ></i>
                                                     </div>
                                                 </div>
                                             </div>
+                                            
+                                             <div class="col-span-1">
+                                                <label for="is_single_select" class="block text-sm font-medium text-gray-700 mb-1">Restricted Menu</label>
+                                                <div class="relative">
+                                                    <select id="is_single_select" name="is_single_select" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none">
+                                                        <option value="no" <?php echo set_select('is_single_select', 'no', isset($menu['is_single_select']) && $menu['is_single_select'] == 'no'); ?>>No</option>
+                                                        <option value="yes" <?php echo set_select('is_single_select', 'yes', isset($menu['is_single_select']) && $menu['is_single_select'] == 'yes'); ?>>Yes</option>
+                                                    </select>
+                                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                                    </div>
+                                                </div>
+                                                <small>Select Yes if you want user to order only one menu per category</small>
+                                            </div>
+                                            
+                                            <div class="col-span-1">
+                                                <label for="is_main_menu" class="block text-sm font-medium text-gray-700 mb-1">Is Main Menu</label>
+                                                <div class="relative">
+                                                    <select id="is_main_menu" name="is_main_menu" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none">
+                                                        <option value="no" <?php echo set_select('is_main_menu', 'no', isset($menu['is_main_menu']) && $menu['is_main_menu'] == 'no'); ?>>No</option>
+                                                        <option value="yes" <?php echo set_select('is_main_menu', 'yes', isset($menu['is_main_menu']) && $menu['is_main_menu'] == 'yes'); ?>>Yes</option>
+                                                    </select>
+                                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                                    </div>
+                                                </div>
+                                                <small>Select Yes if you want no other restricted menu can be ordred along with this</small>
+                                            </div>
+                                            
+                                            
                                             
                                             <!-- Price -->
                                           

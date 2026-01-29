@@ -5,8 +5,10 @@ module.exports = {
     "../application/modules/**/*.{php,html,js,jsx,ts,tsx}",
     "../application/helpers/**/*.{php,html,js,jsx,ts,tsx}",
     "../application/controllers/**/*.{php,html,js,jsx,ts,tsx}"
-],
+  ],
+
   safelist: [
+    // ===== Existing patterns =====
     {
       pattern: /^bg-(blue|green|purple|amber|red|indigo|teal|pink|primary)-500$/,
     },
@@ -22,15 +24,33 @@ module.exports = {
     {
       pattern: /^text-(white|black)$/,
     },
+
+    // ===== 🔥 NEW: Menu color dropdown fixes =====
+    'bg-blue-600',
+    'bg-yellow-500',   // visible yellow
+    'bg-amber-800',   // brown replacement
+    'bg-green-600',
+    'bg-purple-600',
+
+    // Borders & rings used by color swatches
+    'border-gray-300',
+    'border-gray-400',
+    'ring-2',
+    'ring-offset-2',
+    'ring-gray-700',
+
+    // Misc
     'rounded-lg',
     'shadow-md',
     'hover:bg-hover',
   ],
+
   theme: {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
       },
+
       colors: {
         primary: {
           50: '#f0fdf4',
@@ -70,12 +90,12 @@ module.exports = {
           teal: '#14b8a6',
           pink: '#ec4899',
         },
-        chef:{
-        green: '#38A169',
-        blue: '#162945',
-        purple: '#805AD5',
-        orange: '#ED8936',
-        red: '#E53E3E',  
+        chef: {
+          green: '#38A169',
+          blue: '#162945',
+          purple: '#805AD5',
+          orange: '#ED8936',
+          red: '#E53E3E',
         },
         sidebar: '#F7F9FB',
         header: '#1E3A8A',
@@ -86,5 +106,6 @@ module.exports = {
       },
     },
   },
+
   plugins: [],
 }

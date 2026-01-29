@@ -19,6 +19,61 @@ class Order_model extends CI_Model{
      
 
 	}
+	
+public function getSuiteSummary()
+{
+    $this->tenantDb->select('
+        s.id AS suite_id,
+        s.bed_no,
+        s.floor,
+        p.name AS person_name,
+        p.special_instructions
+    ');
+    $this->tenantDb->from('suites s');
+
+    // Keep LEFT JOIN intact
+    $this->tenantDb->join(
+        'people p',
+        'p.suite_number = s.id AND p.status = 1',
+        'left'
+    );
+
+    $this->tenantDb->where('s.is_deleted', 0);
+    $this->tenantDb->where('s.is_vaccant', 0);
+
+   
+    $this->tenantDb->where('p.special_instructions IS NOT NULL', null, false);
+    $this->tenantDb->where("TRIM(p.special_instructions) != ''", null, false);
+
+    $query = $this->tenantDb->get()->result_array();
+
+    $output = [];
+
+    foreach ($query as $row) {
+        $suiteId = $row['suite_id'];
+
+        if (!isset($output[$suiteId])) {
+            $output[$suiteId] = [
+                'floor'     => $row['floor'],
+                'bed_no'    => $row['bed_no'],
+                'people'    => []
+            ];
+        }
+
+        if (!empty(trim($row['special_instructions']))) {
+            $output[$suiteId]['people'][] = [
+                // 'name' => $row['person_name'],
+                'instructions' => $row['special_instructions']
+            ];
+        }
+    }
+
+    return $output;
+}
+
+
+
+
    
 function fetchOrderForChef($date = null, $orderId = null) {
     // CRITICAL FIX: Use Australia/Sydney timezone for date operations
@@ -41,6 +96,7 @@ function fetchOrderForChef($date = null, $orderId = null) {
         md.sort_order as menu_item_sort_order,
         opo.option_id,
         mo.menu_option_name,
+        mo.menu_color,
         md.name as food_category_name,
         SUM(CASE WHEN opo.status = 0 THEN opo.quantity ELSE 0 END) as total_qty,
         SUM(CASE WHEN opo.status = 1 THEN opo.quantity ELSE 0 END) as completed_qty,
@@ -298,7 +354,7 @@ function fetchOrderForChef($date = null, $orderId = null) {
    // FIXED: Fetch both menu options AND standalone comments (notes without menu items)
    // First, get all menu options with their comments, allergen information, and item-specific comments
    $this->tenantDb->distinct();
-   $this->tenantDb->select('opo.order_id, opo.menu_id, opo.option_id, opo.bed_id, mo.menu_option_name, mo.allergenValues, m2c.category_id,o2c.order_comment,o2c.order_data, mic.comment as item_comment');
+   $this->tenantDb->select('opo.order_id, opo.menu_id, opo.option_id, opo.bed_id, mo.menu_option_name,mo.menu_color, mo.allergenValues, m2c.category_id,o2c.order_comment,o2c.order_data, mic.comment as item_comment');
    $this->tenantDb->from('orders_to_patient_options as opo');
    $this->tenantDb->join('menu_options as mo', 'opo.option_id = mo.id', 'LEFT');
    $this->tenantDb->join('orders_to_comments as o2c', 'o2c.bed_id = opo.bed_id AND o2c.order_id = opo.order_id', 'LEFT');
@@ -354,6 +410,7 @@ function fetchOrderForChef($date = null, $orderId = null) {
             opo.option_id, 
             sod.suite_id as bed_id, 
             mo.menu_option_name, 
+            mo.menu_color, 
             mo.allergenValues,
             m2c.category_id,
             sod.order_comment,

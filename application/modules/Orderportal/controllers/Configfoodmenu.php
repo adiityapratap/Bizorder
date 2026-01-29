@@ -229,7 +229,7 @@ class Configfoodmenu extends MY_Controller
     public function menus(){
         
         // Fetch only ACTIVE menu items (displayOnDashbord = 1) for main table
-        $data['menuLists'] = $this->menu_model->fetchMenuDetails('', true);
+        $data['menuLists'] = $this->menu_model->fetchMenuDetails('', false);
         // echo "<pre>"; print_r($data['menuLists']); exit;
        
         $conditions['listtype'] = 'itemtype';
@@ -329,6 +329,7 @@ class Configfoodmenu extends MY_Controller
 
     if ($id) {
         $data['menu'] = $this->menu_model->get_menu_details($id);
+        // echo "<pre>"; print_r($data['menu']); exit;
         $data['menu']['categories'] = $this->menu_model->get_menu_categories($id);
         if (empty($data['menu'])) {
             show_404();
@@ -351,27 +352,22 @@ class Configfoodmenu extends MY_Controller
         $menu_data = [
             'name' => $this->security->xss_clean($this->input->post('menuName')),
             'inputType' => $this->input->post('inputType'),
+            'is_single_select' => $this->input->post('is_single_select'), // such menu can be selected only one menu per category(breakfast, lunch dinner are categories)
+            'is_main_menu' => $this->input->post('is_main_menu'), // no other restricted menu can be ordred along with this main menu
             'cuisine' => $this->input->post('cuisine'),
             'description' => $this->input->post('description'),
             'status' => 1,
             'is_deleted' => 0,
             'date_updated' => date('Y-m-d')
         ];
+        
+        //   echo "<pre>"; print_r($menu_data); exit;
 
         if (empty($id)) {
             $menu_data['date_created'] = date('Y-m-d');
         }
         
-        // ═══════════════════════════════════════════════════════════════════════
-        // LOG MENU SAVE/UPDATE OPERATION
-        // ═══════════════════════════════════════════════════════════════════════
-        log_message('info', "🍽️ MENU " . ($id ? 'UPDATE' : 'CREATE') . ":");
-        log_message('info', "   Menu ID: " . ($id ?: 'NEW'));
-        log_message('info', "   Menu Name: " . $menu_data['name']);
-        log_message('info', "   Input Type: " . $menu_data['inputType']);
-        log_message('info', "   User: " . ($this->session->userdata('username') ?: 'UNKNOWN'));
-        log_message('info', "   User ID: " . ($this->session->userdata('user_id') ?: 'UNKNOWN'));
-        log_message('info', "   IP: " . $this->input->ip_address());
+     
      
         $menu_id = $this->menu_model->save_menu_details($menu_data, $id);
 
@@ -455,16 +451,7 @@ class Configfoodmenu extends MY_Controller
             // Collect cuisines as array (multiple selection)
             $cuisines = $this->input->post('cuisines');
             $cuisines_value = !empty($cuisines) ? json_encode($cuisines) : json_encode([]);
-            
-            log_message('info', "🔧 MENU OPTION " . ($id ? 'UPDATE' : 'CREATE') . ":");
-            log_message('info', "   Option ID: " . ($id ?: 'NEW'));
-            log_message('info', "   Option Name: " . $this->input->post('menu_option_name'));
-            log_message('info', "   User: " . ($this->session->userdata('username') ?: 'UNKNOWN'));
-            log_message('info', "   User ID: " . ($this->session->userdata('user_id') ?: 'UNKNOWN'));
-            log_message('info', "   IP: " . $this->input->ip_address());
-            log_message('info', "   Allergens: " . (empty($allergies) ? 'None' : implode(',', $allergies)));
-            log_message('info', "   Cuisines: " . (empty($cuisines) ? 'None' : implode(',', $cuisines)));
-            log_message('info', "   Is Special Item: " . ($this->input->post('is_special_item') ? 'YES' : 'NO'));
+          
             
             $option_data = [
                 // FIX: Remove TRUE to prevent double-encoding of & and other special characters
@@ -477,6 +464,7 @@ class Configfoodmenu extends MY_Controller
                 'location_id' => $this->selected_location_id,
                 'status' => 1,
                 'is_deleted' => 0,
+                'menu_color' => $this->input->post('menu_color'),
                 'nutritionPerServing' => $this->input->post('nutritionPerServing') ?? NULL,
                 'nutritionPerGram' => $this->input->post('nutritionPerGram') ?? NULL,
                 'prices' => $this->input->post('prices') ?? NULL,

@@ -2325,6 +2325,8 @@ class Order extends MY_Controller
   
     // production form
     public function viewProductionForm($selectedDate = '') {
+    
+        
         // CRITICAL FIX: Use Australia/Sydney timezone for date operations
         // Check if auto-print is requested - if so, default to TOMORROW's date
         $autoPrint = $this->input->get('autoPrint') === 'true';
@@ -2342,6 +2344,9 @@ class Order extends MY_Controller
         }
         
         $ordersItemInfo = $this->order_model->fetchOrderForChef($selectedDate);
+        // Fetch suite + people summary (special instructions)
+       $data['suiteSummary'] = $this->order_model->getSuiteSummary();
+
         
         // FIXED: Organize by: Category (Breakfast) > Subcategory (test, toast, condiments) > Items
         $output = [];
@@ -2373,6 +2378,7 @@ class Order extends MY_Controller
                 'option_id'        => $optionId,
                 'menu_item_name'   => $menuItemName,
                 'menu_option_name' => $row['menu_option_name'],
+                'menu_colour' => $row['menu_color'],
                 'subcategory_name' => $subcategoryName,
                 'qty'              => (int)$row['total_qty'], // Pending quantity
                 'completed_qty'    => (int)$row['completed_qty'], // Completed quantity
@@ -2381,7 +2387,12 @@ class Order extends MY_Controller
                 'bed_details'      => $row['bed_quantities'],
                 'is_completed'     => (int)$row['is_completed']
             ];
+             
+              
         }
+        
+     
+             
 
         // Fetch metrics for the selected date (consolidated across all floors)
         $metrics = $this->getProductionFormMetrics($selectedDate);
@@ -2423,17 +2434,12 @@ class Order extends MY_Controller
             $deptParams[] = $deptId;
         }
         
-        $totalPatients = $this->tenantDb->query("
-            SELECT COUNT(DISTINCT p.id) as count
-            FROM people p
-            INNER JOIN suites s ON s.id = p.suite_number
-            WHERE p.status = 1
-            AND s.is_vaccant = 0
-            AND s.status = 1
-            AND s.is_deleted = 0
-            AND (p.date_of_discharge IS NULL OR p.date_of_discharge > ?)
-            $deptFilter
-        ", array_merge([$date], $deptParams))->row()->count;
+      $totalPatients = $this->tenantDb
+    ->where('is_vaccant', 0)
+    ->where('is_deleted', 0)
+    ->where('status', 1)
+    ->count_all_results('suites');
+
         
         // Occupied suites for the selected date (should match total_patients)
         // Uses the SAME logic to ensure 1:1 accuracy

@@ -490,10 +490,12 @@ class Hospitalconfig extends MY_Controller
 	function onboardingForm($id='',$idType='person'){
 	  
     $conditions['listtype'] = 'floor';
+     $conditions['is_deleted'] = 0;
     $data['floor_numbers']  = $this->common_model->fetchRecordsDynamically('foodmenuconfig','',$conditions);
     
     
     $conditions['listtype'] = 'allergen';
+    
     $data['allergies'] = $this->common_model->fetchRecordsDynamically('foodmenuconfig',['id','name'],$conditions);
     
     $conditionsB['status'] = '1';
@@ -538,7 +540,7 @@ class Hospitalconfig extends MY_Controller
             }
         }
     }
-    
+  
     $data['suites'] = $vacant_suites;
    
        	$this->load->view('general/landingPageHeader');

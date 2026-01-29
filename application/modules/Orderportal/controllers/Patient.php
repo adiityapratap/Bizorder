@@ -57,9 +57,10 @@ class Patient extends MY_Controller
     $conditions['is_deleted'] = '0';
     $data['floors']  = $this->common_model->fetchRecordsDynamically('foodmenuconfig',['id','name'],$conditions);
     
-    unset($conditions['is_deleted']);
-    $conditions['listtype'] = 'allergen';
-    $data['allergies'] = $this->common_model->fetchRecordsDynamically('foodmenuconfig',['id','name'],$conditions);
+    
+    $conditionsA['listtype'] = 'allergen';
+    $conditionsA['is_deleted'] = '0';
+    $data['allergies'] = $this->common_model->fetchRecordsDynamically('foodmenuconfig',['id','name'],$conditionsA);
     
     $conditionsB['status'] = '1';
     $conditionsB['is_deleted'] = '0';      // Exclude deleted suites
@@ -77,9 +78,9 @@ class Patient extends MY_Controller
     $conditions['is_deleted'] = '0';
     $data['floor_numbers']  = $this->common_model->fetchRecordsDynamically('foodmenuconfig','',$conditions);
     
-    unset($conditions['is_deleted']);
-    $conditions['listtype'] = 'allergen';
-    $data['allergies'] = $this->common_model->fetchRecordsDynamically('foodmenuconfig',['id','name'],$conditions);
+     $conditionsA['listtype'] = 'allergen';
+    $conditionsA['is_deleted'] = '0';
+    $data['allergies'] = $this->common_model->fetchRecordsDynamically('foodmenuconfig',['id','name'],$conditionsA);
     
     // Fetch cuisines for dietary preferences
     $conditions_cuisine['listtype'] = 'cuisine';
@@ -162,8 +163,11 @@ class Patient extends MY_Controller
     
     // Collect dietary preferences (cuisines) as array
     $dietary_preferences = $this->input->post('dietary_preferences');
-    
+    if(empty($dietary_preferences)){
+     $dietary_preferences = array('84');   // if no diet pref. is selected than we need to set  it to standard diet pref by default
+    }
     // Save as JSON (preferred)
+    
     $dietary_preferences_value = !empty($dietary_preferences) ? json_encode($dietary_preferences) : json_encode([]);
 
     $suite_number = $this->input->post('suite_number');

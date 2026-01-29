@@ -769,6 +769,7 @@
                 </div>
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <p class="text-gray-800 text-base leading-relaxed" id="modalDescription"></p>
+                    <p id="modalAllergens" class="mt-2 text-sm text-red-600 font-medium"></p>
                 </div>
                 <div class="flex justify-end">
                     <button type="button" id="close-description" onclick="closeDescriptionModal()" class="py-2 px-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium">Close</button>
@@ -2314,6 +2315,7 @@
                 
                 const bed = bedLists.find(b => b.id == bedId);
                 const dietaryRestrictions = bed && bed.dietary_restrictions ? bed.dietary_restrictions.split(',') : [];
+                console.log("dietaryRestrictions ===",dietaryRestrictions)
 
                 // Use data from backend
                 const categoryList = menuData.categories || [];
@@ -2348,12 +2350,26 @@
                 categoryList.forEach(category => {
                     
                     // First check if there are saved menus for this category
-                    let categoryMenus = menuList.filter(m => 
-                        m.category_ids && m.category_ids.includes(category.id) && 
-                        ((savedWithoutOptions[category.id] || []).includes(m.menu_id) || 
-                         (savedWithOptions[category.id]?.[m.menu_id] || []).length > 0)
-                    );
+                    // let categoryMenus = menuList.filter(m => 
+                    //     m.category_ids && m.category_ids.includes(category.id) && 
+                    //     ((savedWithoutOptions[category.id] || []).includes(m.menu_id) || 
+                    //      (savedWithOptions[category.id]?.[m.menu_id] || []).length > 0)
+                    // );
                     
+                    
+                    // rmeove this code on 29th jan and uncomment above one 
+                    const forcedMenuIds = ['83', '84'];
+                    
+                     let categoryMenus = menuList.filter(m => 
+    m.category_ids && m.category_ids.includes(category.id) && 
+    (
+        forcedMenuIds.includes(m.menu_id) ||   // 👈 always include these
+        (savedWithoutOptions[category.id] || []).includes(m.menu_id) || 
+        (savedWithOptions[category.id]?.[m.menu_id] || []).length > 0
+    )
+);
+
+            //   rmeove this code on 29th jan and uncomment above one END .     
                     
                     // If no saved menus and we have a published menu, show all available menus for this category
                     if (categoryMenus.length === 0 && hasMenu) {
@@ -2398,6 +2414,7 @@
                                     'Beverages': 'fa-mug-saucer',
                                     'Cereal': 'fa-bowl-food'
                                 }[menu.menu_name] || 'fa-utensils';
+                                 console.log("dietaryRestrictions",dietaryRestrictions)
 
                                 if (menu.menu_options && menu.menu_options.length > 0 && savedWithOptions[category.id]?.[menu.menu_id]) {
                                     const menuPlannerOptions = savedWithOptions[category.id][menu.menu_id] || [];
@@ -2445,7 +2462,7 @@
                                                 </span>
                                             </h3>
                                             ${allergyWarning}
-                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 menu-options-grid" data-group="${category.id}_${menu.menu_id}" data-max="${menu.inputType === 'radio' ? 1 : 2}">
+                                            <div data-is_main_menu="${menu.is_main_menu}" data-singleSelect="${menu.is_single_select}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 menu-options-grid" data-group="${category.id}_${menu.menu_id}" data-max="${menu.inputType === 'radio' ? 1 : 2}">
                                                 ${menu.menu_options
                                                     .filter(option => menuPlannerOptions.includes(String(option.option_id)))
                                                     .filter(option => {
@@ -2551,15 +2568,19 @@
                                                                                 ${isChecked ? '<i class="fa-solid fa-check text-white text-xs absolute top-0.5 left-0.5"></i>' : ''}
                                                                             </div>
                                                             <span class="text-sm font-medium text-gray-800">${htmlspecialchars(option.menu_option_name)}</span>
-                                                            ${option.menu_option_description && option.menu_option_description.trim() !== '' ? `
-                                                                <button type="button" 
-                                                                        class="ml-2 text-gray-400 hover:text-blue-600 transition-colors info-icon-btn relative z-10 p-2 rounded-full hover:bg-gray-100"
-                                                                        data-description="${htmlspecialchars(option.menu_option_description)}"
-                                                                        title="${htmlspecialchars(option.menu_option_description)}"
-                                                                        onclick="event.stopPropagation(); window.showMenuDescriptionModal(this.getAttribute('data-description')); return false;">
-                                                                    <i class="fas fa-info-circle text-lg"></i>
-                                                                </button>
-                                                            ` : ''}
+                                                          ${option.menu_option_description && option.menu_option_description.trim() !== '' ? `
+    <button type="button"
+            class="ml-2 text-gray-400 hover:text-blue-600 transition-colors info-icon-btn relative z-10 p-2 rounded-full hover:bg-gray-100"
+            data-description="${htmlspecialchars(option.menu_option_description)}"
+            data-allergens="${htmlspecialchars(option.allergenValues)}"
+            title="${htmlspecialchars(option.menu_option_description)}"
+            onclick="event.stopPropagation(); showMenuDescriptionModal(
+                this.getAttribute('data-description'),
+                JSON.parse(this.getAttribute('data-allergens') || '[]')
+            ); return false;">
+        <i class="fas fa-info-circle text-lg"></i>
+    </button>
+` : ''}
                                                             <button type="button" 
                                                                     class="ml-2 text-gray-400 hover:text-orange-600 transition-colors comment-btn p-2 rounded-full hover:bg-gray-100"
                                                                     data-bed-id="${bedId}"
@@ -2713,27 +2734,92 @@
                 }
                 
                 // Handle card clicks for menu selection (excluding info icons)
-                function handleCardClicks(e) {
-                    // Skip if it's an info icon or its children
-                    if (e.target.closest('.info-icon-btn')) {
-                        return;
-                    }
-                    
-                    // Handle card clicks for menu selection
-                    const cardDiv = e.target.closest('.p-2.border.border-gray-200.rounded-lg');
-                    if (cardDiv) {
-                        const container = cardDiv.closest('.relative');
-                        if (container) {
-                            const input = container.querySelector('.menu-option-checkbox');
-                            if (input && !input.disabled) {
-                                // Toggle the checkbox
-                                input.checked = !input.checked;
-                                // Trigger change event
-                                input.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                        }
-                    }
-                }
+                 function handleCardClicks(e) {
+    console.log("checkbox bug dashboard recep");
+
+    // Skip if it's an info icon or its children
+    if (e.target.closest('.info-icon-btn')) {
+        return;
+    }
+
+    // Handle card clicks for menu selection
+    const cardDiv = e.target.closest('.p-2.border.border-gray-200.rounded-lg');
+
+    if (!cardDiv) return;
+
+    const container = cardDiv.closest('.relative');
+
+    if (!container) return;
+
+    const input = container.querySelector('.menu-option-checkbox');
+
+    if (!input || input.disabled) return;
+
+    // Toggle checkbox
+    input.checked = !input.checked;
+
+  // added by ady to make sure no menu can be selected if its restricted menu    Ady's chnages for 27th jan        
+       // 🔒 Restricted menu limit (max 2 across all singleSelect groups)
+const allRestricted = document.querySelectorAll(
+    '[data-singleselect="yes"] .menu-option-checkbox, [data-singleselect="yes"] input[type="radio"]'
+);
+ // 🍽 ALL main menu inputs
+    const allMainMenus = document.querySelectorAll(
+        '[data-is_main_menu="yes"] .menu-option-checkbox, [data-is_main_menu="yes"] input[type="radio"]'
+    );
+    
+const checkedRestricted = Array.from(allRestricted).filter(cb => cb.checked);
+
+ const isMainMenuSelected = Array.from(allMainMenus).some(cb => cb.checked);
+     if (isMainMenuSelected) {
+
+        allRestricted.forEach(cb => {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        });
+
+    } else{
+        
+        
+        if (checkedRestricted.length >= 2) {
+    allRestricted.forEach(cb => {
+        if (!cb.checked) {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        }
+    });
+}else if (checkedRestricted.length == 1) {
+    allMainMenus.forEach(cb => {
+        if (!cb.checked) {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        }
+    });
+    
+    allRestricted.forEach(cb => {
+        cb.disabled = false;
+        cb.removeAttribute('disabled');
+    });
+    
+}  else {
+    allRestricted.forEach(cb => {
+        cb.disabled = false;
+        cb.removeAttribute('disabled');
+    });
+   
+     allMainMenus.forEach(cb => {
+            cb.disabled = false;
+            cb.removeAttribute('disabled', 'disabled');
+        });
+}
+        
+    }
+    // Ady's chnages for 27th jan END
+
+
+    // Trigger change (for price, calories, etc)
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+}
                 
                 // Handle info icon hover to show tooltip
                 function handleInfoIconHover(e) {
@@ -2748,26 +2834,64 @@
                 }
                 
                 // Show menu description modal - make it global
-                window.showMenuDescriptionModal = function(description) {
-                    const modal = document.getElementById('description-modal');
-                    const content = document.getElementById('modalDescription');
-                    const modalContent = document.getElementById('description-modal-content');
-                    
-                    if (content) {
-                        content.textContent = description;
-                    }
-                    
-                    if (modal && modalContent) {
-                        // Remove initial classes first
-                        modalContent.classList.remove('scale-95', 'opacity-0');
-                        modal.classList.remove('hidden');
-                        
-                        // Then add visible classes with animation
-                        setTimeout(() => {
-                            modalContent.classList.add('scale-100', 'opacity-100');
-                        }, 10);
-                    }
-                }
+                window.showMenuDescriptionModal = function(description, allergenValues = []) {
+    console.log('Description:', description);
+    console.log('Allergen IDs:', allergenValues); // This will now be an array: ["26", "37"]
+
+    // Only send AJAX if there are allergen IDs
+    if (allergenValues.length > 0) {
+        const formData = new URLSearchParams();
+        formData.append('allergen_ids', JSON.stringify(allergenValues)); // Send as JSON string
+
+        fetch('<?php echo base_url("Orderportal/Home/fetchAllergenname"); ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest' // Optional: helps CI detect AJAX
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Allergen Names:', data.allergens);
+                // Example: Show allergens below description
+                const allergenText = data.allergens.length > 0
+                    ? 'Allergy Alert : Contains: ' + data.allergens.join(', ')
+                    : 'No allergens';
+
+                document.getElementById('modalAllergens').textContent = allergenText;
+            } else {
+                console.error('Error:', data.message);
+                document.getElementById('modalAllergens').textContent = 'Unable to load allergens';
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            document.getElementById('modalAllergens').textContent = 'Error loading allergens';
+        });
+    } else {
+        document.getElementById('modalAllergens').textContent = 'No allergens';
+    }
+
+    // Show modal with description
+    const modal = document.getElementById('description-modal');
+    const content = document.getElementById('modalDescription');
+
+    if (content) {
+        content.textContent = description;
+    }
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            const modalContent = document.getElementById('description-modal-content');
+            if (modalContent) {
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }
+        }, 10);
+    }
+};
                 
                 function handleMenuOptionChange(e) {
                     // Don't handle if it's an info icon click
@@ -2802,6 +2926,74 @@
                             }
                         });
                     }
+                    
+       // added by ady to make sure no menu can be selected if its restricted menu    Ady's chnages for 27th jan        
+       // 🔒 Restricted menu limit (max 2 across all singleSelect groups)
+const allRestricted = document.querySelectorAll(
+    '[data-singleselect="yes"] .menu-option-checkbox, [data-singleselect="yes"] input[type="radio"]'
+);
+ // 🍽 ALL main menu inputs
+    const allMainMenus = document.querySelectorAll(
+        '[data-is_main_menu="yes"] .menu-option-checkbox, [data-is_main_menu="yes"] input[type="radio"]'
+    );
+    
+const checkedRestricted = Array.from(allRestricted).filter(cb => cb.checked);
+
+ const isMainMenuSelected = Array.from(allMainMenus).some(cb => cb.checked);
+     if (isMainMenuSelected) {
+
+        allRestricted.forEach(cb => {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        });
+
+    } else{
+        
+        
+        if (checkedRestricted.length >= 2) {
+    allRestricted.forEach(cb => {
+        if (!cb.checked) {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        }
+    });
+}else if (checkedRestricted.length == 1) {
+    allMainMenus.forEach(cb => {
+        if (!cb.checked) {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        }
+    });
+    
+    allRestricted.forEach(cb => {
+        cb.disabled = false;
+        cb.removeAttribute('disabled');
+    });
+    
+}  else {
+    allRestricted.forEach(cb => {
+        cb.disabled = false;
+        cb.removeAttribute('disabled');
+    });
+    
+    
+     allMainMenus.forEach(cb => {
+            cb.disabled = false;
+            cb.removeAttribute('disabled', 'disabled');
+        });
+}
+        
+    }
+    
+
+
+
+ 
+   
+
+// Ady's chnages for 27th jan END
+
+
                     
                     // Update visual state for current input
                     updateVisualState(input, input.checked);

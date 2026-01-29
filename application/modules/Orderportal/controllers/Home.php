@@ -32,6 +32,104 @@ class Home extends MY_Controller {
         }
         return $date->format('Y-m-d');
     }
+    
+    
+   public function fetchAllergenname()
+  {
+    // Only allow AJAX requests
+    if (!$this->input->is_ajax_request()) {
+        show_error('Access denied', 403);
+    }
+
+    $allergen_ids_json = $this->input->post('allergen_ids');
+
+    if (!$allergen_ids_json) {
+        echo json_encode(['success' => false, 'message' => 'No allergen IDs provided']);
+        return;
+    }
+
+    // Decode JSON string to array
+    $allergen_ids = json_decode($allergen_ids_json, true);
+
+    if (!is_array($allergen_ids) || empty($allergen_ids)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid allergen IDs']);
+        return;
+    }
+
+    // Fetch allergen names where listtype = 'allergen' and id IN (...)
+    $conditions = [
+        'listtype' => 'allergen',
+    ];
+
+    $this->tenantDb->select('id, name');
+    $this->tenantDb->from('foodmenuconfig');
+    $this->tenantDb->where($conditions);
+    $this->tenantDb->where_in('id', $allergen_ids); // Important!
+    $this->tenantDb->where('is_deleted', 0); // Optional: exclude deleted
+    $query = $this->tenantDb->get();
+
+    $allergens = [];
+    if ($query->num_rows() > 0) {
+        foreach ($query->result_array() as $row) {
+            $allergens[] = $row['name'];
+        }
+    }
+
+    // Return JSON response
+    echo json_encode([
+        'success'   => true,
+        'allergens' => $allergens
+    ]);
+}
+
+  public function fetchDietrycode()
+  {
+    // Only allow AJAX requests
+    if (!$this->input->is_ajax_request()) {
+        show_error('Access denied', 403);
+    }
+
+    $dietrycodes_ids_json = $this->input->post('dc_ids');
+
+    if (!$dietrycodes_ids_json) {
+        echo json_encode(['success' => false, 'message' => 'No Dietry IDs provided']);
+        return;
+    }
+
+    // Decode JSON string to array
+    $dietrycodes_ids = json_decode($dietrycodes_ids_json, true);
+
+    if (!is_array($dietrycodes_ids) || empty($dietrycodes_ids)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid Dietry code IDs']);
+        return;
+    }
+
+    // Fetch allergen names where listtype = 'Dietry' and id IN (...)
+    $conditions = [
+        'listtype' => 'cuisine',
+    ];
+
+    $this->tenantDb->select('id, name');
+    $this->tenantDb->from('foodmenuconfig');
+    $this->tenantDb->where($conditions);
+    $this->tenantDb->where_in('id', $dietrycodes_ids); // Important!
+    $this->tenantDb->where('is_deleted', 0); // Optional: exclude deleted
+    $query = $this->tenantDb->get();
+
+    $dietryCodes = [];
+    if ($query->num_rows() > 0) {
+        foreach ($query->result_array() as $row) {
+            $dietryCodes[] = $row['name'];
+        }
+    }
+
+    // Return JSON response
+    echo json_encode([
+        'success'   => true,
+        'dietryCodes' => $dietryCodes
+    ]);
+}
+
 	   
     /**
      * Get tomorrow's date in Australia/Sydney timezone (YYYY-MM-DD format)
@@ -244,7 +342,7 @@ class Home extends MY_Controller {
     public function dashboardNurse($isReception=false){
         
         $conditions = array('is_deleted' => 0);
-        $data['menuLists']    = $this->menu_model->fetchMenuDetails('',true);
+     
 
         $conditions = array('is_deleted' => 0,'floor'=>$this->session->userdata('department_id'));
        $allSuites = $this->common_model->fetchRecordsDynamically('suites','',$conditions);
@@ -351,7 +449,10 @@ class Home extends MY_Controller {
        
         $result = $this->menu_model->fetchMenuDetails('',true);
         $data['menuLists'] = $result;
-       
+        // echo "<pre>"; print_r($result); exit;
+        
+        
+
 
         $selectedDepartments = [];
         $isPublished = false;
@@ -386,14 +487,18 @@ class Home extends MY_Controller {
             }
         }
       }
+      
+    //   $savedMenuWithOptions[5][83] = ['529','530','531'];
+    //   $savedMenuWithoutOptions[5][83] = ['529','530','531'];
+      
     //  99 percent of time we will have menu with options, for case menu without options we can still menu itslef as menu options
       $data['savedMenuWithoutOptions'] = $savedMenuWithoutOptions; // menuplanner planned by chef for menu without options
       $data['savedMenuWithOptions'] = $savedMenuWithOptions;  // menuplanner planned by chef for menu with options
       $data['hasPublishedMenu'] = !empty($savedData); // Flag to indicate if published menu exists
         
-        //  echo "<pre>"; print_r($data['menuLists']);
-        // // print_r($data['savedMenuWithoutOptions']);
-        // echo "<pre>"; print_r($data['savedMenuWithOptions']);
+        //  echo "<pre>"; print_r($savedMenuWithoutOptions);
+        // print_r($savedMenuWithOptions);
+        // // echo "<pre>"; print_r($data['savedMenuWithOptions']);
         // exit;
        
       
