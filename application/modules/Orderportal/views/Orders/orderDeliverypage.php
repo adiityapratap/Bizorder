@@ -597,15 +597,29 @@ input:checked + .switch-slider:before {
                       ?>
                  <?php
                  
-                  $target_bed_id =    $bedList['id'];      $target_menu_id = $menuId;
+                  $target_bed_id =    $bedList['id'];
+                  $target_menu_id = $menuId;
                     // Filter and extract menu_option_name
-                  $option_names = array_map(function ($item) {
-                  return $item['menu_option_name'];
-                  }, array_filter($orderMenuOptions, function ($item) use ($target_bed_id, $target_menu_id) {
-                   return $item['bed_id'] == $target_bed_id && $item['menu_id'] == $target_menu_id;
-                  }));
+                    // echo "<pre>"; print_r($orderMenuOptions); exit;
+                
+$option_html = array_map(function ($item) {
+    $color = !empty($item['menu_color']) ? htmlspecialchars($item['menu_color']) : '';
+    $name  = htmlspecialchars($item['menu_option_name']);
 
-                 $commaSeparatedOptions = implode(', ', $option_names);
+    return '
+        <span class="inline-flex items-center gap-1 mr-2">
+            <span class="w-3 h-3 rounded-sm border border-gray-400"
+                  style="background-color: ' . $color . ';"></span>
+            <span>' . $name . '</span>
+        </span>
+    ';
+}, array_filter($orderMenuOptions, function ($item) use ($target_bed_id, $target_menu_id) {
+    return $item['bed_id'] == $target_bed_id && $item['menu_id'] == $target_menu_id;
+}));
+
+
+
+                 $commaSeparatedOptions = implode(', ', $option_html);
                  
                  ?>     
                  <div class="form-check form-check-success fs-12">

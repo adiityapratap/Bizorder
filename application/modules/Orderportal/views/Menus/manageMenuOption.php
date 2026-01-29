@@ -232,6 +232,64 @@ input, textarea, select {
                              placeholder="Enter description" ><?php echo set_value('description', isset($menu_option['description']) ? htmlspecialchars($menu_option['description']) : ''); ?></textarea>
                     <div id="description-error" class="error-message hidden text-red-500 text-xs mt-1" style="color: #ef4444 !important;">Description is required</div>
                 </div>
+              <?php
+$colorOptions = [
+    '#2563eb' => 'Blue',
+    '#eab308' => 'Yellow',
+    '#92400e' => 'Brown',
+    '#16a34a' => 'Green',
+    '#7c3aed' => 'Purple',
+    '' => 'None',
+];
+
+$selectedColor = $menu_option['menu_color'] ?? '';
+?>
+
+
+
+                <!-- Menu Color Selector -->
+<!-- Menu Color Dropdown -->
+<!-- Menu Color Dropdown -->
+<div class="form-group relative">
+    <label class="block text-sm text-gray-600 mb-1">
+        Menu Color <span class="text-red-500">*</span>
+    </label>
+
+    <input type="hidden" name="menu_color" id="menu_color" value="<?= htmlspecialchars($selectedColor) ?>">
+
+    <button type="button" id="colorDropdownBtn"
+        class="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+
+        <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded border border-gray-400"
+                  style="background-color: <?= $selectedColor ?: '#e5e7eb' ?>"></span>
+
+            <span id="selectedColorText" class="text-sm text-gray-700">
+                <?= $selectedColor ? $colorOptions[$selectedColor] : 'Select Color' ?>
+            </span>
+        </div>
+
+        <i class="fa-solid fa-chevron-down text-gray-500"></i>
+    </button>
+
+    <div id="colorDropdown"
+         class="absolute hidden mt-1 w-full border border-gray-300 rounded-lg bg-white shadow-lg z-50">
+        <?php foreach ($colorOptions as $hex => $label): ?>
+            <div class="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100"
+                 onclick="selectMenuColor('<?= $hex ?>', '<?= $label ?>')">
+
+                <span class="w-5 h-5 rounded border border-gray-400"
+                      style="background-color: <?= $hex ?>"></span>
+
+                <span class="text-sm text-gray-700"><?= $label ?></span>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+
+
+
                 
             </div>
             
@@ -458,4 +516,36 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+    
+    
+</script>
+
+
+<script>
+const colorBtn = document.getElementById('colorDropdownBtn');
+const colorDropdown = document.getElementById('colorDropdown');
+const colorInput = document.getElementById('menu_color');
+const selectedText = document.getElementById('selectedColorText');
+
+colorBtn.addEventListener('click', () => {
+    colorDropdown.classList.toggle('hidden');
+});
+
+function selectMenuColor(color, bgClass) {
+    colorInput.value = color;
+    selectedText.textContent = color;
+    selectedText.classList.add('capitalize');
+
+    const swatch = colorBtn.querySelector('span.w-5');
+    swatch.className = 'w-5 h-5 rounded border ' + bgClass;
+
+    colorDropdown.classList.add('hidden');
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', function (e) {
+    if (!colorBtn.contains(e.target) && !colorDropdown.contains(e.target)) {
+        colorDropdown.classList.add('hidden');
+    }
+});
 </script>

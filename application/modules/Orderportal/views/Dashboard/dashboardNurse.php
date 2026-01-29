@@ -1214,6 +1214,8 @@
                 </div>
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <p class="text-gray-800 text-base leading-relaxed" id="modalDescription"></p>
+                    <p id="modalAllergens" class="text-sm text-red-600 font-medium mt-2"></p>
+                    <p id="modalDietrycodes" class="text-sm text-green-600 font-medium mt-2"></p>
                 </div>
                 <div class="flex justify-end">
                     <button type="button" id="close-description" class="py-2 px-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium">Close</button>
@@ -2743,18 +2745,38 @@
 
                 categoryList.forEach(category => {
                     
-                    // First check if there are saved menus for this category
-                    let categoryMenus = menuList.filter(m => 
-                        m.category_ids && m.category_ids.includes(category.id) && 
-                        ((savedWithoutOptions[category.id] || []).includes(m.menu_id) || 
-                         (savedWithOptions[category.id]?.[m.menu_id] || []).length > 0)
-                    );
+                    // First check if there are saved menus for this category remove this 
+                   
+
+
+                    // let categoryMenus = menuList.filter(m => 
+                    //     m.category_ids && m.category_ids.includes(category.id) && 
+                    //     ((savedWithoutOptions[category.id] || []).includes(m.menu_id) || 
+                    //      (savedWithOptions[category.id]?.[m.menu_id] || []).length > 0)
+                    // );
                     
+              const forcedMenuIds = ['83', '84'];         // Fresh Fruits + Lunch Beverages , rmeove this code on 29th jan and uncomment above one
+                    let categoryMenus = menuList.filter(m => 
+    m.category_ids && m.category_ids.includes(category.id) && 
+    (
+        forcedMenuIds.includes(m.menu_id) ||   // 👈 always include these
+        (savedWithoutOptions[category.id] || []).includes(m.menu_id) || 
+        (savedWithOptions[category.id]?.[m.menu_id] || []).length > 0
+    )
+);
+
+// remove this above one
+
+
                     
                     // If no saved menus and we have a published menu, show all available menus for this category
                     if (categoryMenus.length === 0 && hasMenu) {
                         categoryMenus = menuList.filter(m => m.category_ids && m.category_ids.includes(category.id));
                     }
+                
+                console.log("categoryMenus",categoryMenus)
+                console.log("category",category)
+                 console.log("menuList",menuList)
                     
                     if (categoryMenus.length === 0) {
                         return;
@@ -2845,7 +2867,7 @@
                                                 </span>
                                             </h3>
                                             ${allergyWarning}
-                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 menu-options-grid" data-group="${category.id}_${menu.menu_id}" data-max="${menu.inputType === 'radio' ? 1 : 2}">
+                                            <div data-is_main_menu="${menu.is_main_menu}" data-singleSelect="${menu.is_single_select}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 menu-options-grid" data-group="${category.id}_${menu.menu_id}" data-max="${menu.inputType === 'radio' ? 1 : 2}">
                                                 ${(menuPlannerOptions.length > 0 
                                                     ? menu.menu_options.filter(option => menuPlannerOptions.includes(String(option.option_id)))
                                                     : menu.menu_options) // Show all options if menu planner data is missing
@@ -2934,7 +2956,8 @@
                                                     .map(option => {
                                                         const optionId = String(option.option_id);
                                                         const menuOptionCalorie = String(option.menu_option_calorie);
-                                                        const inputName = menu.inputType === 'radio' ? `${category.id}_${menu.menu_id}` : `${category.id}_${menu.menu_id}[]`;
+                                                        // const inputName = menu.inputType === 'radio' ? `${category.id}_${menu.menu_id}` : `${category.id}_${menu.menu_id}[]`;
+                                                        const inputName = `${category.id}_${menu.menu_id}[]`;
                                                         const selectedForMenu = patientOrders[`${bedId}_${category.id}_${menu.menu_id}`] || [];
                                                         
                                                         // Convert all selected IDs to strings for comparison
@@ -2944,7 +2967,7 @@
                                                        
                                                         return `
                                                             <div class="relative">
-                                                                <input type="${menu.inputType}" 
+                                                                <input type="checkbox" 
                                                                        id="option_${bedId}_${category.id}_${menu.menu_id}_${optionId}" 
                                                                        name="${inputName}" 
                                                                        data-calorie="${menuOptionCalorie}"
@@ -2961,14 +2984,21 @@
                                                                             </div>
                                                             <span class="text-sm font-medium text-gray-800">${htmlspecialchars(option.menu_option_name)}</span>
                                                             ${option.menu_option_description && option.menu_option_description.trim() !== '' ? `
-                                                                <button type="button" 
-                                                                        class="ml-2 text-gray-400 hover:text-blue-600 transition-colors info-icon-btn relative z-10 p-2 rounded-full hover:bg-gray-100"
-                                                                        data-description="${htmlspecialchars(option.menu_option_description)}"
-                                                                        title="${htmlspecialchars(option.menu_option_description)}"
-                                                                        onclick="event.stopPropagation(); window.showMenuDescriptionModal(this.getAttribute('data-description')); return false;">
-                                                                    <i class="fas fa-info-circle text-lg"></i>
-                                                                </button>
-                                                            ` : ''}
+    <button type="button"
+            class="ml-2 text-gray-400 hover:text-blue-600 transition-colors info-icon-btn relative z-10 p-2 rounded-full hover:bg-gray-100"
+            data-description="${htmlspecialchars(option.menu_option_description)}"
+            data-allergens="${htmlspecialchars(option.allergenValues)}"
+            data-dietryCode="${htmlspecialchars(option.cuisineValues)}"
+            title="${htmlspecialchars(option.menu_option_description)}"
+            onclick="event.stopPropagation(); showMenuDescriptionModal(
+                this.getAttribute('data-description'),
+                JSON.parse(this.getAttribute('data-allergens') || '[]'),
+                JSON.parse(this.getAttribute('data-dietryCode') || '[]')
+                
+            ); return false;">
+        <i class="fas fa-info-circle text-lg"></i>
+    </button>
+` : ''}
                                                             <button type="button" 
                                                                     class="ml-2 text-gray-400 hover:text-orange-600 transition-colors comment-btn p-2 rounded-full hover:bg-gray-100"
                                                                     data-bed-id="${bedId}"
@@ -2997,7 +3027,7 @@
                                     return `
                                         <div class="flex items-center space-x-3 mb-3">
                                             <div class="relative">
-                                                <input type="${menu.inputType}" 
+                                                <input type="checkbox" 
                                                        id="menu_${bedId}_${category.id}_${menu.menu_id}" 
                                                        name="${category.id}_${menu.menu_id}" 
                                                        value="${menu.menu_id}" 
@@ -3082,7 +3112,7 @@
                                         return '';
                                     }
                                     
-                                    const inputName = menu.inputType === 'radio' ? `${category.id}_${menu.menu_id}` : `${category.id}_${menu.menu_id}[]`;
+                                    const inputName = `${category.id}_${menu.menu_id}[]`;
                                     const selectedForMenu = patientOrders[`${bedId}_${category.id}_${menu.menu_id}`] || [];
                                     const selectedIds = selectedForMenu.map(id => String(id));
                                     
@@ -3094,13 +3124,13 @@
                                                     (Choose up to ${menu.inputType === 'radio' ? 1 : menu.max_selections || 2} - Selected: ${selectedIds.length})
                                                 </span>
                                             </h3>
-                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 menu-options-grid" data-group="${category.id}_${menu.menu_id}" data-max="${menu.inputType === 'radio' ? 1 : 2}">
+                                            <div data-is_main_menu="${menu.is_main_menu}" data-singleSelect="${menu.is_single_select}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 menu-options-grid" data-group="${category.id}_${menu.menu_id}" data-max="${menu.inputType === 'radio' ? 1 : 2}">
                                                 ${filteredOptions.map(option => {
                                                     const optionId = String(option.option_id);
                                                     const isChecked = selectedIds.includes(optionId) ? 'checked' : '';
                                                     return `
                                                         <div class="relative">
-                                                            <input type="${menu.inputType}" 
+                                                            <input type="checkbox" 
                                                                    id="option_${bedId}_${category.id}_${menu.menu_id}_${optionId}" 
                                                                    name="${inputName}" 
                                                                    value="${optionId}" 
@@ -3208,27 +3238,86 @@
                 }
                 
                 // Handle card clicks for menu selection (excluding info icons)
-                function handleCardClicks(e) {
-                    // Skip if it's an info icon or its children
-                    if (e.target.closest('.info-icon-btn')) {
-                        return;
-                    }
-                    
-                    // Handle card clicks for menu selection
-                    const cardDiv = e.target.closest('.p-2.border.border-gray-200.rounded-lg');
-                    if (cardDiv) {
-                        const container = cardDiv.closest('.relative');
-                        if (container) {
-                            const input = container.querySelector('.menu-option-checkbox');
-                            if (input && !input.disabled) {
-                                // Toggle the checkbox
-                                input.checked = !input.checked;
-                                // Trigger change event
-                                input.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                        }
-                    }
-                }
+
+
+
+function handleCardClicks(e) {
+
+    if (e.target.closest('.info-icon-btn')) return;
+
+    const cardDiv = e.target.closest('.p-2.border.border-gray-200.rounded-lg');
+    if (!cardDiv) return;
+
+    const container = cardDiv.closest('.relative');
+    if (!container) return;
+
+    const input = container.querySelector('.menu-option-checkbox, input[type="radio"]');
+    if (!input || input.disabled) return;
+
+    // Toggle
+    input.checked = !input.checked;
+
+    // added by ady to make sure no menu can be selected if its restricted menu    Ady's chnages for 27th jan        
+       // 🔒 Restricted menu limit (max 2 across all singleSelect groups)
+const allRestricted = document.querySelectorAll(
+    '[data-singleselect="yes"] .menu-option-checkbox, [data-singleselect="yes"] input[type="radio"]'
+);
+ // 🍽 ALL main menu inputs
+    const allMainMenus = document.querySelectorAll(
+        '[data-is_main_menu="yes"] .menu-option-checkbox, [data-is_main_menu="yes"] input[type="radio"]'
+    );
+    
+const checkedRestricted = Array.from(allRestricted).filter(cb => cb.checked);
+
+ const isMainMenuSelected = Array.from(allMainMenus).some(cb => cb.checked);
+     if (isMainMenuSelected) {
+
+        allRestricted.forEach(cb => {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        });
+
+    } else{
+        
+        
+        if (checkedRestricted.length >= 2) {
+    allRestricted.forEach(cb => {
+        if (!cb.checked) {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        }
+    });
+}else if (checkedRestricted.length == 1) {
+    allMainMenus.forEach(cb => {
+        if (!cb.checked) {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        }
+    });
+    
+    allRestricted.forEach(cb => {
+        cb.disabled = false;
+        cb.removeAttribute('disabled');
+    });
+    
+}  else {
+    allRestricted.forEach(cb => {
+        cb.disabled = false;
+        cb.removeAttribute('disabled');
+    });
+   
+     allMainMenus.forEach(cb => {
+            cb.disabled = false;
+            cb.removeAttribute('disabled', 'disabled');
+        });
+}
+        
+    }
+    // Ady's chnages for 27th jan END
+
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
                 
                 // Handle info icon hover to show tooltip
                 function handleInfoIconHover(e) {
@@ -3243,24 +3332,109 @@
                 }
                 
                 // Show menu description modal - make it global
-                window.showMenuDescriptionModal = function(description) {
-                    const modal = document.getElementById('description-modal');
-                    const content = document.getElementById('modalDescription');
-                    
-                    if (content) {
-                        content.textContent = description;
-                    }
-                    
-                    if (modal) {
-                        modal.classList.remove('hidden');
-                        setTimeout(() => {
-                            const modalContent = document.getElementById('description-modal-content');
-                            if (modalContent) {
-                                modalContent.classList.add('scale-100', 'opacity-100');
-                            }
-                        }, 10);
-                    }
-                }
+                window.showMenuDescriptionModal = function(description, allergenValues = [],dietryCode =[]) {
+    console.log('Description:', description);
+    console.log('dietryCode IDs:', dietryCode); // This will now be an array: ["26", "37"]
+
+    // Only send AJAX if there are allergen IDs
+    if (allergenValues.length > 0) {
+        const formData = new URLSearchParams();
+        formData.append('allergen_ids', JSON.stringify(allergenValues)); // Send as JSON string
+
+        fetch('<?php echo base_url("Orderportal/Home/fetchAllergenname"); ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest' // Optional: helps CI detect AJAX
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Allergen Names:', data.allergens);
+                // Example: Show allergens below description
+                const allergenText = data.allergens.length > 0
+                    ? 'Allergy Alert :  ' + data.allergens.join(', ')
+                    : 'No allergens';
+
+                document.getElementById('modalAllergens').textContent = allergenText;
+            } else {
+                console.error('Error:', data.message);
+                document.getElementById('modalAllergens').textContent = 'Unable to load allergens';
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            document.getElementById('modalAllergens').textContent = 'Error loading allergens';
+        });
+    } else {
+        document.getElementById('modalAllergens').textContent = 'No allergens';
+    }
+    
+    
+    // fetch Dietry code Like Vegam Halal etc...
+    
+     if (dietryCode.length > 0) {
+        const formData = new URLSearchParams();
+        formData.append('dc_ids', JSON.stringify(dietryCode)); // Send as JSON string
+
+        fetch('<?php echo base_url("Orderportal/Home/fetchDietrycode"); ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest' // Optional: helps CI detect AJAX
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Dietry Codes :', data.dietryCodes);
+                // Example: Show allergens below description
+                const dcText = data.dietryCodes.length > 0
+                    ? 'Dietry Codes  :  ' + data.dietryCodes.join(', ')
+                    : '';
+
+                document.getElementById('modalDietrycodes').textContent = dcText;
+            } else {
+                console.error('Error:', data.message);
+                document.getElementById('modalDietrycodes').textContent = ' ';
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            document.getElementById('modalDietrycodes').textContent = ' ';
+        });
+    } else {
+        document.getElementById('modalDietrycodes').textContent = '';
+    }
+    
+    
+
+
+
+        
+        
+
+    // Show modal with description
+    const modal = document.getElementById('description-modal');
+    const content = document.getElementById('modalDescription');
+
+    if (content) {
+        content.textContent = description;
+    }
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            const modalContent = document.getElementById('description-modal-content');
+            if (modalContent) {
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }
+        }, 10);
+    }
+};
                 
                 function handleMenuOptionChange(e) {
                     // Don't handle if it's an info icon click
@@ -3295,6 +3469,74 @@
                             }
                         });
                     }
+                    
+                    
+        // added by ady to make sure no menu can be selected if its restricted menu    Ady's chnages for 27th jan        
+       // 🔒 Restricted menu limit (max 2 across all singleSelect groups)
+const allRestricted = document.querySelectorAll(
+    '[data-singleselect="yes"] .menu-option-checkbox, [data-singleselect="yes"] input[type="radio"]'
+);
+ // 🍽 ALL main menu inputs
+    const allMainMenus = document.querySelectorAll(
+        '[data-is_main_menu="yes"] .menu-option-checkbox, [data-is_main_menu="yes"] input[type="radio"]'
+    );
+    
+const checkedRestricted = Array.from(allRestricted).filter(cb => cb.checked);
+
+ const isMainMenuSelected = Array.from(allMainMenus).some(cb => cb.checked);
+     if (isMainMenuSelected) {
+
+        allRestricted.forEach(cb => {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        });
+
+    } else{
+        
+        
+        if (checkedRestricted.length >= 2) {
+    allRestricted.forEach(cb => {
+        if (!cb.checked) {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        }
+    });
+}else if (checkedRestricted.length == 1) {
+    allMainMenus.forEach(cb => {
+        if (!cb.checked) {
+            cb.disabled = true;
+            cb.setAttribute('disabled', 'disabled');
+        }
+    });
+    
+    allRestricted.forEach(cb => {
+        cb.disabled = false;
+        cb.removeAttribute('disabled');
+    });
+    
+}  else {
+    allRestricted.forEach(cb => {
+        cb.disabled = false;
+        cb.removeAttribute('disabled');
+    });
+    
+    
+     allMainMenus.forEach(cb => {
+            cb.disabled = false;
+            cb.removeAttribute('disabled', 'disabled');
+        });
+}
+        
+    }
+    
+
+
+
+ 
+   
+
+// Ady's chnages for 27th jan END
+    
                     
                     // Update visual state for current input
                     updateVisualState(input, input.checked);
@@ -4430,6 +4672,9 @@ function showMenuDescription(description) {
             closeAllergenDisclaimerModal();
             pendingBedElement = null;
         }
+        
+        
+        
 
 </script>
 

@@ -165,10 +165,11 @@ input[type=checkbox], input[type=radio] {
 
                             <!-- Allergies Dropdown -->
                           <div id="allergies-field" class="form-group relative">
-    <label for="allergies" class="block text-sm text-gray-600 mb-1">Dietary Restrictions</label>
+    <label for="allergies" class="block text-sm text-gray-600 mb-1">Allergens</label>
 
     <?php 
     $selected_allergies = [];
+  
     if (!empty($patientDetails['allergies'])) {
         $selected_allergies = is_array(json_decode($patientDetails['allergies'], true)) 
             ? json_decode($patientDetails['allergies'], true) 
@@ -235,6 +236,7 @@ input[type=checkbox], input[type=radio] {
     <div id="dietaryPreferencesDropdown"  class="absolute hidden mt-1 w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white shadow-lg" style="z-index: 999;">
         <?php if (!empty($cuisines)): ?>
             <?php foreach ($cuisines as $cuisine): ?>
+            <?php if($cuisine['id'] !=84) {  ?>
                 <label class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer">
                     <input 
                         type="checkbox" 
@@ -245,6 +247,7 @@ input[type=checkbox], input[type=radio] {
                     >
                     <span class="ml-2 text-gray-700 text-sm"><?= $cuisine['name'] ?></span>
                 </label>
+                <?php }  ?>
             <?php endforeach; ?>
         <?php else: ?>
             <div class="px-4 py-2 text-gray-500 text-sm">No cuisine types available</div>

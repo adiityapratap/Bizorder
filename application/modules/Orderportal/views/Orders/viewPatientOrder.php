@@ -116,6 +116,14 @@
                 Late Orders Summary
             </button>
             
+            
+            <button onclick="openSuiteSummary()"
+    class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md flex items-center transition duration-200">
+    <i class="fas fa-list mr-2"></i>
+    View Summary
+</button>
+
+            
             <button onclick="printProductionForm()" class="bg-kitchen-primary hover:bg-kitchen-secondary text-white px-4 py-2 rounded-md flex items-center transition duration-200">
                 <i class="mr-2" data-fa-i2svg=""><svg class="svg-inline--fa fa-print" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="print" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93-3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zM432 248a24 24 0 1 1 0 48 24 24 0 1 1 0-48z"></path></svg></i>
                 Print 
@@ -378,9 +386,17 @@
                                             <div class="flex-1">
                                                 <div class="flex items-center gap-3 mb-1">
                                                     <div class="w-2 h-2 bg-kitchen-primary rounded-full"></div>
+                                                    
+                                                    <span
+  class="w-3.5 h-3.5 rounded-sm border border-gray-400"
+  style="background-color: <?= htmlspecialchars($item['menu_colour']) ?>;">
+</span>
+
                                                     <span class="text-lg font-bold text-gray-800 item-name tracking-wide">
                                                         <?php echo htmlspecialchars($item['menu_option_name']); ?>
                                                     </span>
+                                                    
+                                                    
                                                 </div>
                                     <?php 
                                     // Check for item-specific comments
@@ -564,6 +580,84 @@
         </div>
     </div>
  
+ 
+ <!-- Suite Summary Modal -->
+<div id="suiteSummaryModal"
+     class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    
+    <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-5xl p-6 overflow-y-auto max-h-[90vh]">
+        
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">
+                Suite Special Instructions Summary
+            </h2>
+            <button onclick="closeSuiteSummary()" class="text-gray-500 hover:text-gray-700">
+                ✕
+            </button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full border border-gray-200 text-sm">
+                <thead class="bg-gray-100">
+                    <tr>
+                       
+                        <th class="px-4 py-2 border">Floor</th>
+                        <th class="px-4 py-2 border">Suite</th>
+                        <th class="px-4 py-2 border">Special Instructions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php if (!empty($suiteSummary)) : ?>
+                    <?php foreach ($suiteSummary as $suite) : ?>
+                        <tr class="hover:bg-gray-50 align-top">
+                           
+                            <td class="px-4 py-2 border">
+                                <?= htmlspecialchars($suite['floor']) ?>
+                            </td>
+                            <td class="px-4 py-2 border">
+                                <?= htmlspecialchars($suite['bed_no']) ?>
+                            </td>
+                            <td class="px-4 py-2 border">
+                                <?php if (!empty($suite['people'])) : ?>
+                                    <ul class="list-disc pl-5 space-y-1">
+                                        <?php foreach ($suite['people'] as $person) : ?>
+                                            <li>
+                                               
+                                                <?= htmlspecialchars($person['instructions']) ?>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php else : ?>
+                                    <span class="text-gray-400 italic">No special instructions</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else : ?>
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-gray-500">
+                            No suite data found
+                        </td>
+                    </tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function openSuiteSummary() {
+    document.getElementById('suiteSummaryModal').classList.remove('hidden');
+    document.getElementById('suiteSummaryModal').classList.add('flex');
+}
+
+function closeSuiteSummary() {
+    document.getElementById('suiteSummaryModal').classList.add('hidden');
+    document.getElementById('suiteSummaryModal').classList.remove('flex');
+}
+</script>
+
     <script>
        const categoryIdToName = {
     <?php foreach ($categories as $category) {

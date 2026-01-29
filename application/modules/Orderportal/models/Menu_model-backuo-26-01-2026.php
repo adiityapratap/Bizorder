@@ -59,7 +59,6 @@ public function fetchMenuDetails($fetchAllColumns = '', $isDashboard = false) {
             md.id AS menu_id,
             md.name AS menu_name,
             md.is_single_select AS is_single_select,
-            md.is_main_menu AS is_main_menu,
             md.inputType,
             md.nutritionValues,
             md.nutritionPerServing,
@@ -108,9 +107,11 @@ public function fetchMenuDetails($fetchAllColumns = '', $isDashboard = false) {
 
     // Join for menu options
     $this->tenantDb->join("{$this->menuDetailsToOptionsTable} mdto", 'mdto.main_menu_id = md.id', 'left');
-    
-    $this->tenantDb->join("{$this->menuOptionsTable} mo", 'mdto.menu_option_id = mo.id AND mo.status = 1 AND mo.is_deleted = 0', 'left');
-   
+    // uncommnet this line on 27th jan
+    // $this->tenantDb->join("{$this->menuOptionsTable} mo", 'mdto.menu_option_id = mo.id AND mo.status = 1 AND mo.is_deleted = 0', 'left');
+    // remove this line on 27th jan
+     $this->tenantDb->join("{$this->menuOptionsTable} mo", 'mdto.menu_option_id = mo.id AND  mo.is_deleted = 0', 'left');
+
     // Join for cuisine
     $this->tenantDb->join("{$this->foodMenuConfigTable} fc2", 'md.cuisine = fc2.id AND fc2.listtype = "cuisine"', 'left');
     
@@ -120,14 +121,19 @@ public function fetchMenuDetails($fetchAllColumns = '', $isDashboard = false) {
    
    
    
- 
+  // comment below code condition on 27th on new menu entry is done
+  if($isDashboard == false){
+    
+     $this->tenantDb->where('md.status', 1); 
+  }
+  $this->tenantDb->where('md.displayOnDashbord', 1);
    // uncomment original code condition on 27th on new menu entry is done
   
-  if ($isDashboard) {
-        $this->tenantDb->where('md.displayOnDashbord', 1);
-    }
+//   if ($isDashboard) {
+//         $this->tenantDb->where('md.displayOnDashbord', 1);
+//     }
  
-  $this->tenantDb->where('md.status', 1); 
+//   $this->tenantDb->where('md.status', 1); 
     
     
     
@@ -160,7 +166,6 @@ public function fetchMenuDetails($fetchAllColumns = '', $isDashboard = false) {
             'menu_name' => $row['menu_name'],
             'inputType' => $row['inputType'],
             'is_single_select' => $row['is_single_select'],
-            'is_main_menu' => $row['is_main_menu'],
             'displayOnDashbord' => $row['displayOnDashbord'],
             'description' => $row['description'],
             'category_ids' => !empty($row['category_ids']) ? explode(',', $row['category_ids']) : [],
