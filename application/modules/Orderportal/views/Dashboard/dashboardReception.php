@@ -683,6 +683,21 @@
 
 
 
+                        <!-- Breakfast Selection Instructions -->
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-4 mb-6 shadow-sm">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-info-circle text-blue-600 text-2xl mt-1"></i>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <h3 class="text-lg font-semibold text-blue-900 mb-2">Breakfast Selection Guide</h3>
+                                    <p class="text-blue-800 text-base leading-relaxed">
+                                        Please choose <span class="font-bold">any two items</span> from <span class="font-semibold">Toast, Yoghurt, Fruit Salad, Porridge, or Cereals</span>, or alternatively select <span class="font-bold">one Breakfast Option</span>.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Meal Sections -->
                         <div id="meal-sections" class="space-y-6"></div>
 
