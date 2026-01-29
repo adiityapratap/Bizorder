@@ -102,6 +102,60 @@ input, textarea, select {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Searchable Dropdown Styles */
+#cuisineSearch,
+#allergiesSearch {
+    transition: all 0.2s ease;
+}
+
+#cuisineSearch:focus,
+#allergiesSearch:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Smooth scroll for options list */
+#cuisineOptionsList,
+#allergiesOptionsList {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for dropdown */
+#cuisineOptionsList::-webkit-scrollbar,
+#allergiesOptionsList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#cuisineOptionsList::-webkit-scrollbar-track,
+#allergiesOptionsList::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+#cuisineOptionsList::-webkit-scrollbar-thumb,
+#allergiesOptionsList::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+#cuisineOptionsList::-webkit-scrollbar-thumb:hover,
+#allergiesOptionsList::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Highlight options on hover */
+.cuisine-option:hover,
+.allergen-option:hover {
+    background-color: #f3f4f6 !important;
+}
+
+/* Ensure dropdowns stay on top */
+#cuisineDropdown,
+#allergiesDropdown {
+    max-height: 350px;
+}
+
 /* Hide error messages by default */
 .error-message.hidden {
     display: none !important;
@@ -168,20 +222,42 @@ input, textarea, select {
                                                     <i class="fa-solid fa-chevron-down text-gray-500 ml-2"></i>
                                                 </button>
 
-                                                <!-- Dropdown menu -->
-                                                <div id="cuisineDropdown" class="absolute hidden mt-1 w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white shadow-lg" style="z-index: 999;">
-                                                    <?php foreach ($cuisines as $cuisine): ?>
-                                                        <label class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                                                <!-- Dropdown menu with search -->
+                                                <div id="cuisineDropdown" class="absolute hidden mt-1 w-full border border-gray-300 rounded-lg bg-white shadow-lg" style="z-index: 999;">
+                                                    <!-- Search box -->
+                                                    <div class="p-2 border-b border-gray-200 bg-gray-50">
+                                                        <div class="relative">
                                                             <input 
-                                                                type="checkbox" 
-                                                                name="cuisines[]" 
-                                                                value="<?= $cuisine['id'] ?>" 
-                                                                class="form-checkbox h-4 w-4 text-primary-600"
-                                                                <?= in_array($cuisine['id'], $selected_cuisines) ? 'checked' : '' ?>
+                                                                type="text" 
+                                                                id="cuisineSearch" 
+                                                                placeholder="Search cuisine types..." 
+                                                                class="w-full px-3 py-2 pl-9 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                                                autocomplete="off"
                                                             >
-                                                            <span class="ml-2 text-gray-700 text-sm"><?= $cuisine['name'] ?></span>
-                                                        </label>
-                                                    <?php endforeach; ?>
+                                                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Options list -->
+                                                    <div id="cuisineOptionsList" class="max-h-48 overflow-y-auto p-2">
+                                                        <?php foreach ($cuisines as $cuisine): ?>
+                                                            <label class="cuisine-option flex items-center px-3 py-2 hover:bg-gray-100 rounded cursor-pointer" data-name="<?= strtolower($cuisine['name']) ?>">
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    name="cuisines[]" 
+                                                                    value="<?= $cuisine['id'] ?>" 
+                                                                    class="form-checkbox h-4 w-4 text-primary-600"
+                                                                    <?= in_array($cuisine['id'], $selected_cuisines) ? 'checked' : '' ?>
+                                                                >
+                                                                <span class="ml-2 text-gray-700 text-sm"><?= $cuisine['name'] ?></span>
+                                                            </label>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                    
+                                                    <!-- No results message -->
+                                                    <div id="cuisineNoResults" class="hidden px-4 py-3 text-center text-gray-500 text-sm border-t border-gray-200">
+                                                        <i class="fa-solid fa-search mr-2"></i>No cuisine types found
+                                                    </div>
                                                 </div>
                                             </div>
                                             
@@ -194,28 +270,55 @@ input, textarea, select {
     }
     ?>
                                             
-                 <button type="button" id="allergiesDropdownBtn" 
-        class="w-full flex justify-between items-center px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-        <span id="allergiesSelectedText" class="text-gray-700 text-sm">
-            <?= !empty($selected_allergies) ? count($selected_allergies) . " selected" : "Select Allergies" ?>
-        </span>
-        <i class="fa-solid fa-chevron-down text-gray-500 ml-2"></i>
-    </button>
+    <!-- Allergens Dropdown (Multiple Selection) -->
+    <div id="allergies-field" class="form-group relative">
+        <label for="allergies" class="block text-sm font-medium text-gray-700 mb-1">Allergens (Diet Restrictions)</label>
+        
+        <button type="button" id="allergiesDropdownBtn" 
+            class="w-full flex justify-between items-center px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            <span id="allergiesSelectedText" class="text-gray-700 text-sm">
+                <?= !empty($selected_allergies) ? count($selected_allergies) . " selected" : "Select Allergens" ?>
+            </span>
+            <i class="fa-solid fa-chevron-down text-gray-500 ml-2"></i>
+        </button>
 
-    <!-- Dropdown menu -->
-    <div id="allergiesDropdown"  class="absolute hidden mt-1 w-25 max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white shadow-lg" style="z-index: 999;">
-        <?php foreach ($allergies as $allergy): ?>
-            <label class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                <input 
-                    type="checkbox" 
-                    name="allergies[]" 
-                    value="<?= $allergy['id'] ?>" 
-                    class="form-checkbox h-4 w-4 text-primary-600"
-                    <?= in_array($allergy['id'], $selected_allergies) ? 'checked' : '' ?>
-                >
-                <span class="ml-2 text-gray-700 text-sm"><?= $allergy['name'] ?></span>
-            </label>
-        <?php endforeach; ?>
+        <!-- Dropdown menu with search -->
+        <div id="allergiesDropdown" class="absolute hidden mt-1 w-full border border-gray-300 rounded-lg bg-white shadow-lg" style="z-index: 999;">
+            <!-- Search box -->
+            <div class="p-2 border-b border-gray-200 bg-gray-50">
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="allergiesSearch" 
+                        placeholder="Search allergens..." 
+                        class="w-full px-3 py-2 pl-9 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        autocomplete="off"
+                    >
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+                </div>
+            </div>
+            
+            <!-- Options list -->
+            <div id="allergiesOptionsList" class="max-h-48 overflow-y-auto p-2">
+                <?php foreach ($allergies as $allergy): ?>
+                    <label class="allergen-option flex items-center px-3 py-2 hover:bg-gray-100 rounded cursor-pointer" data-name="<?= strtolower($allergy['name']) ?>">
+                        <input 
+                            type="checkbox" 
+                            name="allergies[]" 
+                            value="<?= $allergy['id'] ?>" 
+                            class="form-checkbox h-4 w-4 text-primary-600"
+                            <?= in_array($allergy['id'], $selected_allergies) ? 'checked' : '' ?>
+                        >
+                        <span class="ml-2 text-gray-700 text-sm"><?= $allergy['name'] ?></span>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+            
+            <!-- No results message -->
+            <div id="allergiesNoResults" class="hidden px-4 py-3 text-center text-gray-500 text-sm border-t border-gray-200">
+                <i class="fa-solid fa-search mr-2"></i>No allergens found
+            </div>
+        </div>
     </div>
                             
                 
@@ -459,23 +562,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 <script>
-// for multiselect of allergens
+// for multiselect of allergens with search
     document.addEventListener("DOMContentLoaded", function () {
         const btn = document.getElementById("allergiesDropdownBtn");
         const menu = document.getElementById("allergiesDropdown");
         const selectedText = document.getElementById("allergiesSelectedText");
+        const searchInput = document.getElementById("allergiesSearch");
+        const optionsList = document.getElementById("allergiesOptionsList");
+        const noResults = document.getElementById("allergiesNoResults");
         const checkboxes = menu.querySelectorAll("input[type=checkbox]");
 
         // Toggle dropdown
         btn.addEventListener("click", () => {
             menu.classList.toggle("hidden");
+            if (!menu.classList.contains("hidden")) {
+                searchInput.focus();
+                searchInput.value = "";
+                filterOptions("");
+            }
         });
+
+        // Search functionality
+        searchInput.addEventListener("input", (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            filterOptions(searchTerm);
+        });
+
+        function filterOptions(searchTerm) {
+            const options = optionsList.querySelectorAll(".allergen-option");
+            let visibleCount = 0;
+
+            options.forEach(option => {
+                const name = option.getAttribute("data-name");
+                if (name.includes(searchTerm)) {
+                    option.style.display = "flex";
+                    visibleCount++;
+                } else {
+                    option.style.display = "none";
+                }
+            });
+
+            // Show/hide no results message
+            if (visibleCount === 0) {
+                noResults.classList.remove("hidden");
+            } else {
+                noResults.classList.add("hidden");
+            }
+        }
 
         // Update selected text when user checks/unchecks
         checkboxes.forEach(cb => {
             cb.addEventListener("change", () => {
                 const checked = [...checkboxes].filter(c => c.checked).length;
-                selectedText.textContent = checked > 0 ? checked + " selected" : "Select Allergies";
+                selectedText.textContent = checked > 0 ? checked + " selected" : "Select Allergens";
             });
         });
 
@@ -485,20 +624,61 @@ document.addEventListener('DOMContentLoaded', function() {
                 menu.classList.add("hidden");
             }
         });
+
+        // Prevent dropdown close when clicking inside search input
+        searchInput.addEventListener("click", (e) => {
+            e.stopPropagation();
+        });
     });
 
-// for multiselect of cuisines
+// for multiselect of cuisines with search
     document.addEventListener("DOMContentLoaded", function () {
         const cuisineBtn = document.getElementById("cuisineDropdownBtn");
         const cuisineMenu = document.getElementById("cuisineDropdown");
         const cuisineSelectedText = document.getElementById("cuisineSelectedText");
+        const cuisineSearchInput = document.getElementById("cuisineSearch");
+        const cuisineOptionsList = document.getElementById("cuisineOptionsList");
+        const cuisineNoResults = document.getElementById("cuisineNoResults");
         const cuisineCheckboxes = cuisineMenu.querySelectorAll("input[type=checkbox]");
 
         // Toggle dropdown
         if (cuisineBtn) {
             cuisineBtn.addEventListener("click", () => {
                 cuisineMenu.classList.toggle("hidden");
+                if (!cuisineMenu.classList.contains("hidden")) {
+                    cuisineSearchInput.focus();
+                    cuisineSearchInput.value = "";
+                    filterCuisineOptions("");
+                }
             });
+
+            // Search functionality
+            cuisineSearchInput.addEventListener("input", (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                filterCuisineOptions(searchTerm);
+            });
+
+            function filterCuisineOptions(searchTerm) {
+                const options = cuisineOptionsList.querySelectorAll(".cuisine-option");
+                let visibleCount = 0;
+
+                options.forEach(option => {
+                    const name = option.getAttribute("data-name");
+                    if (name.includes(searchTerm)) {
+                        option.style.display = "flex";
+                        visibleCount++;
+                    } else {
+                        option.style.display = "none";
+                    }
+                });
+
+                // Show/hide no results message
+                if (visibleCount === 0) {
+                    cuisineNoResults.classList.remove("hidden");
+                } else {
+                    cuisineNoResults.classList.add("hidden");
+                }
+            }
 
             // Update selected text when user checks/unchecks
             cuisineCheckboxes.forEach(cb => {
@@ -513,6 +693,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!cuisineBtn.contains(e.target) && !cuisineMenu.contains(e.target)) {
                     cuisineMenu.classList.add("hidden");
                 }
+            });
+
+            // Prevent dropdown close when clicking inside search input
+            cuisineSearchInput.addEventListener("click", (e) => {
+                e.stopPropagation();
             });
         }
     });

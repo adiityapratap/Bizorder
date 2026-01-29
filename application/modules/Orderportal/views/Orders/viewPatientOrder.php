@@ -591,9 +591,15 @@
             <h2 class="text-xl font-semibold text-gray-800">
                 Suite Special Instructions Summary
             </h2>
-            <button onclick="closeSuiteSummary()" class="text-gray-500 hover:text-gray-700">
-                ✕
-            </button>
+            <div class="flex items-center gap-3">
+                <button onclick="printSuiteSummary()" class="bg-kitchen-primary hover:bg-kitchen-secondary text-white px-4 py-2 rounded-md flex items-center transition duration-200">
+                    <i class="fas fa-print mr-2"></i>
+                    Print
+                </button>
+                <button onclick="closeSuiteSummary()" class="text-gray-500 hover:text-gray-700 text-2xl">
+                    ✕
+                </button>
+            </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -655,6 +661,115 @@ function openSuiteSummary() {
 function closeSuiteSummary() {
     document.getElementById('suiteSummaryModal').classList.add('hidden');
     document.getElementById('suiteSummaryModal').classList.remove('flex');
+}
+
+function printSuiteSummary() {
+    // Get the modal content
+    const modalContent = document.querySelector('#suiteSummaryModal .bg-white');
+    
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Get the date from the header
+    const selectedDate = '<?php echo format_australia_date($selectedDate, "l, F d, Y"); ?>';
+    
+    // Build the print HTML
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Suite Special Instructions Summary - ${selectedDate}</title>
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+            <style>
+                @page {
+                    margin: 1cm;
+                    size: A4 landscape;
+                }
+                body {
+                    font-family: 'Inter', Arial, sans-serif;
+                    font-size: 12px;
+                    margin: 0;
+                    padding: 20px;
+                }
+                h1 {
+                    text-align: center;
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #1f2937;
+                    margin-bottom: 8px;
+                }
+                .date {
+                    text-align: center;
+                    font-size: 14px;
+                    color: #6b7280;
+                    margin-bottom: 20px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 10px;
+                }
+                thead {
+                    background-color: #374151;
+                    color: white;
+                }
+                th {
+                    padding: 12px 8px;
+                    text-align: left;
+                    font-weight: 600;
+                    border: 1px solid #d1d5db;
+                }
+                td {
+                    padding: 10px 8px;
+                    border: 1px solid #d1d5db;
+                    vertical-align: top;
+                }
+                tbody tr:nth-child(even) {
+                    background-color: #f9fafb;
+                }
+                .suite-cell {
+                    font-weight: 600;
+                    color: #1f2937;
+                }
+                .floor-cell {
+                    color: #4b5563;
+                }
+                .instructions-cell {
+                    line-height: 1.5;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                }
+                .no-data {
+                    text-align: center;
+                    padding: 20px;
+                    color: #6b7280;
+                    font-style: italic;
+                }
+                @media print {
+                    body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+                    thead { display: table-header-group; }
+                    tr { page-break-inside: avoid; }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Suite Special Instructions Summary</h1>
+            <div class="date">${selectedDate}</div>
+            ${modalContent.querySelector('.overflow-x-auto').innerHTML}
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    
+    // Wait for content to load, then print
+    printWindow.onload = function() {
+        printWindow.focus();
+        setTimeout(function() {
+            printWindow.print();
+            printWindow.close();
+        }, 250);
+    };
 }
 </script>
 

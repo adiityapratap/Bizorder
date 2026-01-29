@@ -163,13 +163,12 @@ input[type=checkbox], input[type=radio] {
                                 <div class="error-message hidden text-red-500 text-xs mt-1 font-medium"></div>
                             </div>
 
-                            <!-- Allergies Dropdown -->
+                            <!-- Allergies Dropdown with Search -->
                           <div id="allergies-field" class="form-group relative">
     <label for="allergies" class="block text-sm text-gray-600 mb-1">Allergens</label>
 
     <?php 
     $selected_allergies = [];
-  
     if (!empty($patientDetails['allergies'])) {
         $selected_allergies = is_array(json_decode($patientDetails['allergies'], true)) 
             ? json_decode($patientDetails['allergies'], true) 
@@ -186,26 +185,46 @@ input[type=checkbox], input[type=radio] {
         <i class="fa-solid fa-chevron-down text-gray-500 ml-2"></i>
     </button>
 
-    <!-- Dropdown menu -->
-    <div id="allergiesDropdown"  class="absolute hidden mt-1 w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white shadow-lg" style="z-index: 999;">
-        <?php foreach ($allergies as $allergy): ?>
-            <label class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer">
+    <!-- Dropdown menu with search -->
+    <div id="allergiesDropdown" class="absolute hidden mt-1 w-full border border-gray-300 rounded-lg bg-white shadow-lg" style="z-index: 999;">
+        <!-- Search box -->
+        <div class="p-2 border-b border-gray-200">
+            <div class="relative">
                 <input 
-                    type="checkbox" 
-                    name="allergies[]" 
-                    value="<?= $allergy['id'] ?>" 
-                    class="form-checkbox h-4 w-4 text-primary-600"
-                    <?= in_array($allergy['id'], $selected_allergies) ? 'checked' : '' ?>
+                    type="text" 
+                    id="allergiesSearch" 
+                    placeholder="Search allergens..." 
+                    class="w-full px-3 py-2 pl-9 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    autocomplete="off"
                 >
-                <span class="ml-2 text-gray-700 text-sm"><?= $allergy['name'] ?></span>
-            </label>
-        <?php endforeach; ?>
+                <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+            </div>
+        </div>
+        
+        <!-- Options list -->
+        <div id="allergiesOptionsList" class="max-h-48 overflow-y-auto">
+            <?php foreach ($allergies as $allergy): ?>
+                <label class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer allergen-option" data-name="<?= strtolower($allergy['name']) ?>">
+                    <input 
+                        type="checkbox" 
+                        name="allergies[]" 
+                        value="<?= $allergy['id'] ?>" 
+                        class="form-checkbox h-4 w-4 text-primary-600"
+                        <?= in_array($allergy['id'], $selected_allergies) ? 'checked' : '' ?>
+                    >
+                    <span class="ml-2 text-gray-700 text-sm"><?= $allergy['name'] ?></span>
+                </label>
+            <?php endforeach; ?>
+        </div>
+        
+        <!-- No results message -->
+        <div id="allergiesNoResults" class="hidden px-4 py-3 text-center text-gray-500 text-sm">
+            <i class="fa-solid fa-search mr-2"></i>No allergens found
+        </div>
     </div>
-
-   
 </div>
 
-                            <!-- Dietary Preferences Dropdown -->
+                            <!-- Dietary Preferences Dropdown with Search -->
                           <div id="dietary-preferences-field" class="form-group relative">
     <label for="dietary_preferences" class="block text-sm text-gray-600 mb-1">Dietary Preferences</label>
 
@@ -232,26 +251,48 @@ input[type=checkbox], input[type=radio] {
         <i class="fa-solid fa-chevron-down text-gray-500 ml-2"></i>
     </button>
 
-    <!-- Dropdown menu -->
-    <div id="dietaryPreferencesDropdown"  class="absolute hidden mt-1 w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white shadow-lg" style="z-index: 999;">
-        <?php if (!empty($cuisines)): ?>
-            <?php foreach ($cuisines as $cuisine): ?>
-            <?php if($cuisine['id'] !=84) {  ?>
-                <label class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        name="dietary_preferences[]" 
-                        value="<?= $cuisine['id'] ?>" 
-                        class="form-checkbox h-4 w-4 text-primary-600"
-                        <?= in_array($cuisine['id'], $selected_cuisines) ? 'checked' : '' ?>
-                    >
-                    <span class="ml-2 text-gray-700 text-sm"><?= $cuisine['name'] ?></span>
-                </label>
-                <?php }  ?>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <div class="px-4 py-2 text-gray-500 text-sm">No cuisine types available</div>
-        <?php endif; ?>
+    <!-- Dropdown menu with search -->
+    <div id="dietaryPreferencesDropdown" class="absolute hidden mt-1 w-full border border-gray-300 rounded-lg bg-white shadow-lg" style="z-index: 999;">
+        <!-- Search box -->
+        <div class="p-2 border-b border-gray-200">
+            <div class="relative">
+                <input 
+                    type="text" 
+                    id="dietaryPreferencesSearch" 
+                    placeholder="Search dietary preferences..." 
+                    class="w-full px-3 py-2 pl-9 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    autocomplete="off"
+                >
+                <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+            </div>
+        </div>
+        
+        <!-- Options list -->
+        <div id="dietaryPreferencesOptionsList" class="max-h-48 overflow-y-auto">
+            <?php if (!empty($cuisines)): ?>
+                <?php foreach ($cuisines as $cuisine): ?>
+                    <?php if($cuisine['id'] != 84): ?>
+                        <label class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer dietary-preference-option" data-name="<?= strtolower($cuisine['name']) ?>">
+                            <input 
+                                type="checkbox" 
+                                name="dietary_preferences[]" 
+                                value="<?= $cuisine['id'] ?>" 
+                                class="form-checkbox h-4 w-4 text-primary-600"
+                                <?= in_array($cuisine['id'], $selected_cuisines) ? 'checked' : '' ?>
+                            >
+                            <span class="ml-2 text-gray-700 text-sm"><?= $cuisine['name'] ?></span>
+                        </label>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="px-4 py-2 text-gray-500 text-sm">No cuisine types available</div>
+            <?php endif; ?>
+        </div>
+        
+        <!-- No results message -->
+        <div id="dietaryPreferencesNoResults" class="hidden px-4 py-3 text-center text-gray-500 text-sm">
+            <i class="fa-solid fa-search mr-2"></i>No dietary preferences found
+        </div>
     </div>
     
     <!-- Message below Dietary Preferences -->
@@ -259,8 +300,6 @@ input[type=checkbox], input[type=radio] {
         <i class="fa-solid fa-info-circle mr-1" style="color: #f97316 !important;"></i>
         <span style="color: #ea580c !important;">If customer doesn't want to comply, please do not select any preferences</span>
     </div>
-
-   
 </div>
 
                             <!-- Date Onboarded -->
@@ -794,17 +833,53 @@ function previewPatientPhoto(input) {
 </script>
 
 <script>
-// for multiselect of allergens
+// for multiselect of allergens with search
     document.addEventListener("DOMContentLoaded", function () {
         const btn = document.getElementById("allergiesDropdownBtn");
         const menu = document.getElementById("allergiesDropdown");
         const selectedText = document.getElementById("allergiesSelectedText");
+        const searchInput = document.getElementById("allergiesSearch");
+        const optionsList = document.getElementById("allergiesOptionsList");
+        const noResults = document.getElementById("allergiesNoResults");
         const checkboxes = menu.querySelectorAll("input[type=checkbox]");
 
         // Toggle dropdown
         btn.addEventListener("click", () => {
             menu.classList.toggle("hidden");
+            if (!menu.classList.contains("hidden")) {
+                searchInput.focus();
+                searchInput.value = "";
+                filterOptions("");
+            }
         });
+
+        // Search functionality
+        searchInput.addEventListener("input", (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            filterOptions(searchTerm);
+        });
+
+        function filterOptions(searchTerm) {
+            const options = optionsList.querySelectorAll(".allergen-option");
+            let visibleCount = 0;
+
+            options.forEach(option => {
+                const name = option.getAttribute("data-name");
+                if (name.includes(searchTerm)) {
+                    option.style.display = "flex";
+                    visibleCount++;
+                } else {
+                    option.style.display = "none";
+                }
+            });
+
+            // Show/hide no results message
+            if (visibleCount === 0) {
+                noResults.classList.remove("hidden");
+            } else {
+                noResults.classList.add("hidden");
+            }
+        }
 
         // Update selected text when user checks/unchecks
         checkboxes.forEach(cb => {
@@ -820,13 +895,21 @@ function previewPatientPhoto(input) {
                 menu.classList.add("hidden");
             }
         });
+
+        // Prevent dropdown close when clicking inside search input
+        searchInput.addEventListener("click", (e) => {
+            e.stopPropagation();
+        });
     });
 
-// for multiselect of dietary preferences
+// for multiselect of dietary preferences with search
     document.addEventListener("DOMContentLoaded", function () {
         const dietaryBtn = document.getElementById("dietaryPreferencesDropdownBtn");
         const dietaryMenu = document.getElementById("dietaryPreferencesDropdown");
         const dietarySelectedText = document.getElementById("dietaryPreferencesSelectedText");
+        const dietarySearchInput = document.getElementById("dietaryPreferencesSearch");
+        const dietaryOptionsList = document.getElementById("dietaryPreferencesOptionsList");
+        const dietaryNoResults = document.getElementById("dietaryPreferencesNoResults");
         
         if (dietaryBtn && dietaryMenu) {
             const dietaryCheckboxes = dietaryMenu.querySelectorAll("input[type=checkbox]");
@@ -834,7 +917,40 @@ function previewPatientPhoto(input) {
             // Toggle dropdown
             dietaryBtn.addEventListener("click", () => {
                 dietaryMenu.classList.toggle("hidden");
+                if (!dietaryMenu.classList.contains("hidden")) {
+                    dietarySearchInput.focus();
+                    dietarySearchInput.value = "";
+                    filterDietaryOptions("");
+                }
             });
+
+            // Search functionality
+            dietarySearchInput.addEventListener("input", (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                filterDietaryOptions(searchTerm);
+            });
+
+            function filterDietaryOptions(searchTerm) {
+                const options = dietaryOptionsList.querySelectorAll(".dietary-preference-option");
+                let visibleCount = 0;
+
+                options.forEach(option => {
+                    const name = option.getAttribute("data-name");
+                    if (name.includes(searchTerm)) {
+                        option.style.display = "flex";
+                        visibleCount++;
+                    } else {
+                        option.style.display = "none";
+                    }
+                });
+
+                // Show/hide no results message
+                if (visibleCount === 0) {
+                    dietaryNoResults.classList.remove("hidden");
+                } else {
+                    dietaryNoResults.classList.add("hidden");
+                }
+            }
 
             // Update selected text when user checks/unchecks
             dietaryCheckboxes.forEach(cb => {
@@ -849,6 +965,11 @@ function previewPatientPhoto(input) {
                 if (!dietaryBtn.contains(e.target) && !dietaryMenu.contains(e.target)) {
                     dietaryMenu.classList.add("hidden");
                 }
+            });
+
+            // Prevent dropdown close when clicking inside search input
+            dietarySearchInput.addEventListener("click", (e) => {
+                e.stopPropagation();
             });
         }
     });
@@ -964,6 +1085,60 @@ div.error-message {
 /* Override any framework styles that might interfere */
 .error-message * {
     color: inherit !important;
+}
+
+/* Search box styling for allergens and dietary preferences */
+#allergiesSearch,
+#dietaryPreferencesSearch {
+    transition: all 0.2s ease;
+}
+
+#allergiesSearch:focus,
+#dietaryPreferencesSearch:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Smooth scroll for options list */
+#allergiesOptionsList,
+#dietaryPreferencesOptionsList {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for dropdown */
+#allergiesOptionsList::-webkit-scrollbar,
+#dietaryPreferencesOptionsList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#allergiesOptionsList::-webkit-scrollbar-track,
+#dietaryPreferencesOptionsList::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+#allergiesOptionsList::-webkit-scrollbar-thumb,
+#dietaryPreferencesOptionsList::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+#allergiesOptionsList::-webkit-scrollbar-thumb:hover,
+#dietaryPreferencesOptionsList::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Highlight search matches */
+.allergen-option:hover,
+.dietary-preference-option:hover {
+    background-color: #f3f4f6 !important;
+}
+
+/* Ensure dropdown stays on top */
+#allergiesDropdown,
+#dietaryPreferencesDropdown {
+    max-height: 350px;
 }
 
 /* Mobile responsive adjustments */

@@ -276,6 +276,60 @@ label span[style*="color: #ef4444"] {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* Searchable Dropdown Styles */
+#cuisineSearch,
+#allergensSearch {
+    transition: all 0.2s ease;
+}
+
+#cuisineSearch:focus,
+#allergensSearch:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Smooth scroll for options list */
+#cuisineOptionsList,
+#allergensOptionsList {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for dropdown */
+#cuisineOptionsList::-webkit-scrollbar,
+#allergensOptionsList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#cuisineOptionsList::-webkit-scrollbar-track,
+#allergensOptionsList::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+#cuisineOptionsList::-webkit-scrollbar-thumb,
+#allergensOptionsList::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+#cuisineOptionsList::-webkit-scrollbar-thumb:hover,
+#allergensOptionsList::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Highlight options on hover */
+.cuisine-option:hover,
+.allergen-option:hover {
+    background-color: #f3f4f6 !important;
+}
+
+/* Ensure dropdowns stay on top */
+#cuisineDropdown,
+#allergensDropdown {
+    max-height: 350px;
+}
 </style>
 <div class="main-content">
     <div class="page-content">
@@ -416,6 +470,70 @@ label span[style*="color: #ef4444"] {
                                                     </select>
                                                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
                                                         <i class="fa-solid fa-chevron-down text-xs"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Allergens (Diet Restrictions) -->
+                                            <div class="col-span-1 relative">
+                                                <label for="allergens" class="block text-sm font-medium text-gray-700 mb-1">Allergens (Diet Restrictions)</label>
+                                                <?php 
+                                                $selected_allergens = isset($menu['allergens']) ? (is_array($menu['allergens']) ? $menu['allergens'] : json_decode($menu['allergens'], true)) : [];
+                                                if (!is_array($selected_allergens)) {
+                                                    $selected_allergens = [];
+                                                }
+                                                ?>
+                                                <!-- Hidden input to store selected values -->
+                                                <input type="hidden" id="allergens" name="allergens" value="<?php echo htmlspecialchars(json_encode($selected_allergens)); ?>">
+                                                
+                                                <!-- Dropdown trigger button -->
+                                                <button type="button" id="allergensDropdownBtn" 
+                                                    class="w-full flex justify-between items-center px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                                    <span id="allergensSelectedText" class="text-gray-700 text-sm">
+                                                        <?= !empty($selected_allergens) ? count($selected_allergens) . " selected" : "Select allergens" ?>
+                                                    </span>
+                                                    <i class="fa-solid fa-chevron-down text-gray-500 ml-2 text-xs"></i>
+                                                </button>
+
+                                                <!-- Dropdown menu with search -->
+                                                <div id="allergensDropdown" class="absolute hidden mt-1 w-full border border-gray-300 rounded-lg bg-white shadow-lg" style="z-index: 999;">
+                                                    <!-- Search box -->
+                                                    <div class="p-2 border-b border-gray-200 bg-gray-50">
+                                                        <div class="relative">
+                                                            <input 
+                                                                type="text" 
+                                                                id="allergensSearch" 
+                                                                placeholder="Search allergens..." 
+                                                                class="w-full px-3 py-2 pl-9 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                                                autocomplete="off"
+                                                            >
+                                                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Options list -->
+                                                    <div id="allergensOptionsList" class="max-h-48 overflow-y-auto p-2">
+                                                        <?php if (!empty($allergens)): ?>
+                                                            <?php foreach ($allergens as $allergen): ?>
+                                                                <label class="allergen-option flex items-center px-3 py-2 hover:bg-gray-100 rounded cursor-pointer" data-name="<?= strtolower($allergen['name']) ?>">
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        class="allergen-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                                        value="<?= htmlspecialchars($allergen['id']) ?>"
+                                                                        data-name="<?= htmlspecialchars($allergen['name']) ?>"
+                                                                        <?= in_array($allergen['id'], $selected_allergens) ? 'checked' : '' ?>
+                                                                    >
+                                                                    <span class="ml-2 text-gray-700 text-sm"><?= htmlspecialchars($allergen['name']) ?></span>
+                                                                </label>
+                                                            <?php endforeach; ?>
+                                                        <?php else: ?>
+                                                            <div class="px-4 py-2 text-gray-500 text-sm">No allergens available</div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    
+                                                    <!-- No results message -->
+                                                    <div id="allergensNoResults" class="hidden px-4 py-3 text-center text-gray-500 text-sm border-t border-gray-200">
+                                                        <i class="fa-solid fa-search mr-2"></i>No allergens found
                                                     </div>
                                                 </div>
                                             </div>
@@ -1003,6 +1121,178 @@ document.addEventListener('DOMContentLoaded', function () {
     checkboxes.forEach(checkbox => {
         checkbox.addEventListener('change', updateSelections);
     });
+});
+
+// ============================================
+// CUISINE TYPE SEARCHABLE DROPDOWN
+// ============================================
+document.addEventListener('DOMContentLoaded', function () {
+    const cuisineBtn = document.getElementById('cuisineDropdownBtn');
+    const cuisineMenu = document.getElementById('cuisineDropdown');
+    const cuisineSelectedText = document.getElementById('cuisineSelectedText');
+    const cuisineInput = document.getElementById('cuisine');
+    const cuisineSearchInput = document.getElementById('cuisineSearch');
+    const cuisineOptionsList = document.getElementById('cuisineOptionsList');
+    const cuisineNoResults = document.getElementById('cuisineNoResults');
+
+    if (cuisineBtn && cuisineMenu) {
+        // Toggle dropdown
+        cuisineBtn.addEventListener('click', function () {
+            cuisineMenu.classList.toggle('hidden');
+            if (!cuisineMenu.classList.contains('hidden')) {
+                cuisineSearchInput.focus();
+                cuisineSearchInput.value = '';
+                filterCuisineOptions('');
+            }
+        });
+
+        // Search functionality
+        cuisineSearchInput.addEventListener('input', function (e) {
+            const searchTerm = e.target.value.toLowerCase();
+            filterCuisineOptions(searchTerm);
+        });
+
+        function filterCuisineOptions(searchTerm) {
+            const options = cuisineOptionsList.querySelectorAll('.cuisine-option');
+            let visibleCount = 0;
+
+            options.forEach(option => {
+                const name = option.getAttribute('data-name');
+                if (name.includes(searchTerm)) {
+                    option.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+
+            // Show/hide no results message
+            if (visibleCount === 0) {
+                cuisineNoResults.classList.remove('hidden');
+            } else {
+                cuisineNoResults.classList.add('hidden');
+            }
+        }
+
+        // Handle option click
+        cuisineOptionsList.addEventListener('click', function (e) {
+            const option = e.target.closest('.cuisine-option');
+            if (option) {
+                const cuisineId = option.getAttribute('data-id');
+                const cuisineName = option.querySelector('span').textContent;
+                
+                // Update hidden input and display text
+                cuisineInput.value = cuisineId;
+                cuisineSelectedText.textContent = cuisineName;
+                
+                // Close dropdown
+                cuisineMenu.classList.add('hidden');
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!cuisineBtn.contains(e.target) && !cuisineMenu.contains(e.target)) {
+                cuisineMenu.classList.add('hidden');
+            }
+        });
+
+        // Prevent dropdown close when clicking inside search input
+        cuisineSearchInput.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+    }
+});
+
+// ============================================
+// ALLERGENS SEARCHABLE MULTI-SELECT DROPDOWN
+// ============================================
+document.addEventListener('DOMContentLoaded', function () {
+    const allergensBtn = document.getElementById('allergensDropdownBtn');
+    const allergensMenu = document.getElementById('allergensDropdown');
+    const allergensSelectedText = document.getElementById('allergensSelectedText');
+    const allergensInput = document.getElementById('allergens');
+    const allergensSearchInput = document.getElementById('allergensSearch');
+    const allergensOptionsList = document.getElementById('allergensOptionsList');
+    const allergensNoResults = document.getElementById('allergensNoResults');
+    const allergensCheckboxes = document.querySelectorAll('.allergen-checkbox');
+
+    if (allergensBtn && allergensMenu) {
+        // Toggle dropdown
+        allergensBtn.addEventListener('click', function () {
+            allergensMenu.classList.toggle('hidden');
+            if (!allergensMenu.classList.contains('hidden')) {
+                allergensSearchInput.focus();
+                allergensSearchInput.value = '';
+                filterAllergensOptions('');
+            }
+        });
+
+        // Search functionality
+        allergensSearchInput.addEventListener('input', function (e) {
+            const searchTerm = e.target.value.toLowerCase();
+            filterAllergensOptions(searchTerm);
+        });
+
+        function filterAllergensOptions(searchTerm) {
+            const options = allergensOptionsList.querySelectorAll('.allergen-option');
+            let visibleCount = 0;
+
+            options.forEach(option => {
+                const name = option.getAttribute('data-name');
+                if (name.includes(searchTerm)) {
+                    option.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+
+            // Show/hide no results message
+            if (visibleCount === 0) {
+                allergensNoResults.classList.remove('hidden');
+            } else {
+                allergensNoResults.classList.add('hidden');
+            }
+        }
+
+        // Update selected allergens
+        function updateAllergensSelection() {
+            const selected = Array.from(allergensCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            
+            // Update hidden input
+            allergensInput.value = JSON.stringify(selected);
+            
+            // Update display text
+            if (selected.length === 0) {
+                allergensSelectedText.textContent = 'Select allergens';
+            } else {
+                allergensSelectedText.textContent = selected.length + ' selected';
+            }
+        }
+
+        // Add change event listeners to checkboxes
+        allergensCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateAllergensSelection);
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!allergensBtn.contains(e.target) && !allergensMenu.contains(e.target)) {
+                allergensMenu.classList.add('hidden');
+            }
+        });
+
+        // Prevent dropdown close when clicking inside search input
+        allergensSearchInput.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+
+        // Initialize display text on page load
+        updateAllergensSelection();
+    }
 });
 </script>
                                 </form>
