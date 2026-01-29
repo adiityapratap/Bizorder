@@ -50,6 +50,10 @@ error_log
 # Database configuration (NEVER COMMIT!)
 application/config/database.php
 */config/database.php
+mainWebsiteAssets/lang/language.en.json
+application/third_party/phpmailer/
+
+
 
 # Environment files
 .env
