@@ -99,9 +99,14 @@
                                             <i class="ri-filter-3-line"></i> Filter
                                         </button>
                                         <button type="button" 
-                                                class="btn btn-success" 
+                                                class="btn btn-success me-2" 
                                                 onclick="exportOrders()">
-                                            <i class="ri-file-excel-line"></i> Export
+                                            <i class="ri-file-excel-line"></i> Export Orders
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-info" 
+                                                onclick="exportBedsServiced()">
+                                            <i class="ri-file-excel-line"></i> Export Beds
                                         </button>
                                     </div>
                                 </div>
@@ -215,10 +220,40 @@
                                 </div>
                                 <div class="flex-grow-1">
                                     <p class="mb-1" style="color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
-                                        Total Beds (Month)
+                                        Beds This Month
                                     </p>
                                     <h3 class="mb-0" style="color: #ffffff; font-size: 32px; font-weight: 700; line-height: 1;">
                                         <?php echo isset($total_beds_month) ? number_format($total_beds_month) : 0; ?>
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-xl-3">
+                    <div class="card border-0 shadow" style="background: #9b59b6; border-radius: 8px;">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0 me-3">
+                                    <div class="rounded-circle" style="background: rgba(255,255,255,0.25); width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="bx bx-bed" style="font-size: 26px; color: #ffffff;"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <p class="mb-1" style="color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+                                        Total Beds (Range)
+                                    </p>
+                                    <h3 class="mb-0" style="color: #ffffff; font-size: 32px; font-weight: 700; line-height: 1;">
+                                        <?php 
+                                            $total_beds_range = 0;
+                                            if (!empty($beds_per_day)) {
+                                                foreach ($beds_per_day as $day) {
+                                                    $total_beds_range += (int)$day['beds_count'];
+                                                }
+                                            }
+                                            echo number_format($total_beds_range);
+                                        ?>
                                     </h3>
                                 </div>
                             </div>
@@ -525,6 +560,31 @@ function exportTableToExcel() {
 
 function exportOrders() {
     exportTableToExcel();
+}
+
+function exportBedsServiced() {
+    const fromDate = document.querySelector('input[name="from_date"]').value;
+    const toDate = document.querySelector('input[name="to_date"]').value;
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '<?php echo base_url('Orderportal/Reports/exportBedsServiced'); ?>';
+    
+    const fromInput = document.createElement('input');
+    fromInput.type = 'hidden';
+    fromInput.name = 'from_date';
+    fromInput.value = fromDate;
+    form.appendChild(fromInput);
+    
+    const toInput = document.createElement('input');
+    toInput.type = 'hidden';
+    toInput.name = 'to_date';
+    toInput.value = toDate;
+    form.appendChild(toInput);
+    
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
 }
 
 // Add custom styles for report cards

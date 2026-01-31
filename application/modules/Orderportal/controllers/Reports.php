@@ -247,6 +247,54 @@ class Reports extends MY_Controller {
     }
     
     /**
+     * Export beds serviced per day to Excel
+     */
+    public function exportBedsServiced() {
+        $from_date = $this->input->post('from_date') ?: date('Y-m-d', strtotime('-7 days'));
+        $to_date = $this->input->post('to_date') ?: date('Y-m-d');
+        
+        $beds_per_day = $this->getBedsServicedPerDay($from_date, $to_date);
+        
+        // Prepare CSV data
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="beds_serviced_report_' . date('Y-m-d_His') . '.csv"');
+        
+        $output = fopen('php://output', 'w');
+        
+        // CSV Title
+        fputcsv($output, ['Beds (Suites) Serviced Per Day Report']);
+        fputcsv($output, ['Date Range: ' . date('d M Y', strtotime($from_date)) . ' to ' . date('d M Y', strtotime($to_date))]);
+        fputcsv($output, []); // Empty row
+        
+        // CSV Headers
+        fputcsv($output, [
+            'Date',
+            'Day of Week',
+            'Beds Serviced'
+        ]);
+        
+        // CSV Data
+        $total_beds = 0;
+        foreach ($beds_per_day as $day) {
+            $total_beds += $day['beds_count'];
+            fputcsv($output, [
+                date('d M Y', strtotime($day['order_date'])),
+                date('l', strtotime($day['order_date'])),
+                $day['beds_count']
+            ]);
+        }
+        
+        // Add summary
+        fputcsv($output, []); // Empty row
+        fputcsv($output, ['Total Days', count($beds_per_day)]);
+        fputcsv($output, ['Total Beds Serviced', $total_beds]);
+        fputcsv($output, ['Average Beds Per Day', count($beds_per_day) > 0 ? round($total_beds / count($beds_per_day), 2) : 0]);
+        
+        fclose($output);
+        exit;
+    }
+    
+    /**
      * List all order snapshots
      * Shows comprehensive view of all historical snapshots
      */
