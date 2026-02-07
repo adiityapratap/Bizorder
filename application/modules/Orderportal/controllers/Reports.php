@@ -302,25 +302,32 @@ class Reports extends MY_Controller {
         $to_date = $this->input->post('to_date') ?: date('Y-m-d');
         
         // Get patient data with onboarding and discharge dates
+        // Note: People table has suite_number and floor_number to link with suites
         $sql = "SELECT 
+                p.id as patient_id,
+                p.name as patient_name,
+                p.suite_number,
+                p.floor_number,
+                p.allergies,
+                p.dietary_preferences,
+                p.special_instructions,
+                p.date_onboarded as onboarded_date,
+                p.date_of_discharge as discharge_date,
+                p.status as patient_status,
                 s.id as suite_id,
                 s.bed_no as suite_number,
-                f.name as floor_name,
-                p.name as patient_name,
-                p.allergies,
-                s.admission_date as onboarded_date,
-                s.discharge_date,
-                s.status as suite_status
-            FROM suites s
-            LEFT JOIN foodmenuconfig f ON f.id = s.floor AND f.listtype = 'floor' AND f.is_deleted = 0
-            LEFT JOIN people p ON p.id = s.patient_id
-            WHERE s.is_deleted = 0
+                s.status as suite_status,
+                f.name as floor_name
+            FROM people p
+            LEFT JOIN suites s ON s.bed_no = p.suite_number AND s.floor = p.floor_number AND s.is_deleted = 0
+            LEFT JOIN foodmenuconfig f ON f.id = p.floor_number AND f.listtype = 'floor' AND f.is_deleted = 0
+            WHERE p.id IS NOT NULL
             AND (
-                (s.admission_date >= ? AND s.admission_date <= ?)
-                OR (s.discharge_date >= ? AND s.discharge_date <= ?)
-                OR (s.admission_date <= ? AND (s.discharge_date >= ? OR s.discharge_date IS NULL))
+                (p.date_onboarded >= ? AND p.date_onboarded <= ?)
+                OR (p.date_of_discharge >= ? AND p.date_of_discharge <= ?)
+                OR (p.date_onboarded <= ? AND (p.date_of_discharge >= ? OR p.date_of_discharge IS NULL))
             )
-            ORDER BY s.admission_date DESC, s.bed_no ASC";
+            ORDER BY p.date_onboarded DESC, p.suite_number ASC";
         
         $query = $this->tenantDb->query($sql, [
             $from_date, $to_date,
@@ -348,7 +355,9 @@ class Reports extends MY_Controller {
             'Date Onboarded',
             'Date Discharged',
             'Status',
-            'Allergies/Dietary Requirements'
+            'Allergies',
+            'Dietary Preferences',
+            'Special Instructions'
         ]);
         
         // CSV Data
@@ -357,7 +366,7 @@ class Reports extends MY_Controller {
         
         foreach ($patients as $patient) {
             $status = 'Unknown';
-            if ($patient['suite_status'] == 1) {
+            if ($patient['patient_status'] == 1 || $patient['patient_status'] === '1') {
                 $status = $patient['discharge_date'] ? 'Discharged' : 'Active';
                 if ($status == 'Active') $total_active++;
                 if ($status == 'Discharged') $total_discharged++;
@@ -372,7 +381,9 @@ class Reports extends MY_Controller {
                 $patient['onboarded_date'] ? date('d M Y', strtotime($patient['onboarded_date'])) : 'N/A',
                 $patient['discharge_date'] ? date('d M Y', strtotime($patient['discharge_date'])) : 'N/A',
                 $status,
-                $patient['allergies'] ?: 'None'
+                $patient['allergies'] ?: 'None',
+                $patient['dietary_preferences'] ?: 'None',
+                $patient['special_instructions'] ?: 'None'
             ]);
         }
         
