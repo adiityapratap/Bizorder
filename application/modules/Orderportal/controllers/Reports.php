@@ -319,7 +319,7 @@ class Reports extends MY_Controller {
                 s.status as suite_status,
                 f.name as floor_name
             FROM people p
-            LEFT JOIN suites s ON s.bed_no = p.suite_number AND s.floor = p.floor_number AND s.is_deleted = 0
+            LEFT JOIN suites s ON s.id = p.suite_number AND s.floor = p.floor_number AND s.is_deleted = 0
             LEFT JOIN foodmenuconfig f ON f.id = p.floor_number AND f.listtype = 'floor' AND f.is_deleted = 0
             WHERE p.id IS NOT NULL
             AND (
