@@ -355,9 +355,7 @@ class Reports extends MY_Controller {
             'Date Onboarded',
             'Date Discharged',
             'Status',
-            'Allergies',
-            'Dietary Preferences',
-            'Special Instructions'
+           
         ]);
         
         // CSV Data
@@ -381,9 +379,7 @@ class Reports extends MY_Controller {
                 $patient['onboarded_date'] ? date('d M Y', strtotime($patient['onboarded_date'])) : 'N/A',
                 $patient['discharge_date'] ? date('d M Y', strtotime($patient['discharge_date'])) : 'N/A',
                 $status,
-                $patient['allergies'] ?: 'None',
-                $patient['dietary_preferences'] ?: 'None',
-                $patient['special_instructions'] ?: 'None'
+               
             ]);
         }
         
