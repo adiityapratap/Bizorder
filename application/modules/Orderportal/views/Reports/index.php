@@ -104,9 +104,14 @@
                                             <i class="ri-file-excel-line"></i> Export Orders
                                         </button>
                                         <button type="button" 
-                                                class="btn btn-info" 
+                                                class="btn btn-info me-2" 
                                                 onclick="exportBedsServiced()">
                                             <i class="ri-file-excel-line"></i> Export Beds
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-warning" 
+                                                onclick="exportPatientReport()">
+                                            <i class="ri-user-line"></i> Patient Report
                                         </button>
                                     </div>
                                 </div>
@@ -569,6 +574,31 @@ function exportBedsServiced() {
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = '<?php echo base_url('Orderportal/Reports/exportBedsServiced'); ?>';
+    
+    const fromInput = document.createElement('input');
+    fromInput.type = 'hidden';
+    fromInput.name = 'from_date';
+    fromInput.value = fromDate;
+    form.appendChild(fromInput);
+    
+    const toInput = document.createElement('input');
+    toInput.type = 'hidden';
+    toInput.name = 'to_date';
+    toInput.value = toDate;
+    form.appendChild(toInput);
+    
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
+function exportPatientReport() {
+    const fromDate = document.querySelector('input[name="from_date"]').value;
+    const toDate = document.querySelector('input[name="to_date"]').value;
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '<?php echo base_url('Orderportal/Reports/exportPatientReport'); ?>';
     
     const fromInput = document.createElement('input');
     fromInput.type = 'hidden';

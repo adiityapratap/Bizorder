@@ -295,6 +295,99 @@ class Reports extends MY_Controller {
     }
     
     /**
+     * Export Patient Report to Excel
+     */
+    public function exportPatientReport() {
+        $from_date = $this->input->post('from_date') ?: date('Y-m-d', strtotime('-7 days'));
+        $to_date = $this->input->post('to_date') ?: date('Y-m-d');
+        
+        // Get patient data with onboarding and discharge dates
+        $sql = "SELECT 
+                s.id as suite_id,
+                s.bed_no as suite_number,
+                f.name as floor_name,
+                p.name as patient_name,
+                p.allergies,
+                s.admission_date as onboarded_date,
+                s.discharge_date,
+                s.status as suite_status
+            FROM suites s
+            LEFT JOIN foodmenuconfig f ON f.id = s.floor AND f.listtype = 'floor' AND f.is_deleted = 0
+            LEFT JOIN people p ON p.id = s.patient_id
+            WHERE s.is_deleted = 0
+            AND (
+                (s.admission_date >= ? AND s.admission_date <= ?)
+                OR (s.discharge_date >= ? AND s.discharge_date <= ?)
+                OR (s.admission_date <= ? AND (s.discharge_date >= ? OR s.discharge_date IS NULL))
+            )
+            ORDER BY s.admission_date DESC, s.bed_no ASC";
+        
+        $query = $this->tenantDb->query($sql, [
+            $from_date, $to_date,
+            $from_date, $to_date,
+            $from_date, $to_date
+        ]);
+        $patients = $query->result_array();
+        
+        // Prepare CSV data
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="patient_report_' . date('Y-m-d_His') . '.csv"');
+        
+        $output = fopen('php://output', 'w');
+        
+        // CSV Title
+        fputcsv($output, ['Patient Report']);
+        fputcsv($output, ['Date Range: ' . date('d M Y', strtotime($from_date)) . ' to ' . date('d M Y', strtotime($to_date))]);
+        fputcsv($output, []); // Empty row
+        
+        // CSV Headers
+        fputcsv($output, [
+            'Suite Number',
+            'Floor',
+            'Patient Name',
+            'Date Onboarded',
+            'Date Discharged',
+            'Status',
+            'Allergies/Dietary Requirements'
+        ]);
+        
+        // CSV Data
+        $total_active = 0;
+        $total_discharged = 0;
+        
+        foreach ($patients as $patient) {
+            $status = 'Unknown';
+            if ($patient['suite_status'] == 1) {
+                $status = $patient['discharge_date'] ? 'Discharged' : 'Active';
+                if ($status == 'Active') $total_active++;
+                if ($status == 'Discharged') $total_discharged++;
+            } else {
+                $status = 'Inactive';
+            }
+            
+            fputcsv($output, [
+                $patient['suite_number'] ?: 'N/A',
+                $patient['floor_name'] ?: 'N/A',
+                $patient['patient_name'] ?: 'No Patient Assigned',
+                $patient['onboarded_date'] ? date('d M Y', strtotime($patient['onboarded_date'])) : 'N/A',
+                $patient['discharge_date'] ? date('d M Y', strtotime($patient['discharge_date'])) : 'N/A',
+                $status,
+                $patient['allergies'] ?: 'None'
+            ]);
+        }
+        
+        // Add summary
+        fputcsv($output, []); // Empty row
+        fputcsv($output, ['Summary']);
+        fputcsv($output, ['Total Patients', count($patients)]);
+        fputcsv($output, ['Active Patients', $total_active]);
+        fputcsv($output, ['Discharged Patients', $total_discharged]);
+        
+        fclose($output);
+        exit;
+    }
+    
+    /**
      * List all order snapshots
      * Shows comprehensive view of all historical snapshots
      */
