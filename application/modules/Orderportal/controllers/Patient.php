@@ -462,6 +462,17 @@ class Patient extends MY_Controller
                 $suite_update = array('is_vaccant' => 1);
                 $this->common_model->commonRecordUpdate('suites', 'id', $patient['suite_number'], $suite_update);
                 log_message('info', "SUITE STATUS UPDATE: Suite {$patient['suite_number']} marked as VACANT after patient discharge. Patient ID={$patient_id}, Patient Name=" . ($patient['name'] ?: 'UNKNOWN') . ", User=" . ($this->session->userdata('username') ?: 'UNKNOWN') . " at " . australia_datetime());
+                
+                // Cancel all future orders for this suite
+                $cancelled_count = $this->cancelFutureOrdersForPatientDischarge(
+                    $patient['suite_number'], 
+                    australia_date_only(), 
+                    $patient['name'] ?: 'Unknown'
+                );
+                
+                if ($cancelled_count > 0) {
+                    log_message('info', "PATIENT DISCHARGE - ORDERS CANCELLED: {$cancelled_count} future order(s) cancelled for suite {$patient['suite_number']} after patient discharge. Patient ID={$patient_id}, User=" . ($this->session->userdata('username') ?: 'UNKNOWN') . " at " . australia_datetime());
+                }
             }
             
             log_message('info', "PATIENT STATUS UPDATE SUCCESS: Patient ID={$patient_id}, Patient Name=" . ($patient['name'] ?: 'UNKNOWN') . ", Status changed to " . strtoupper($status) . ", User=" . ($this->session->userdata('username') ?: 'UNKNOWN') . ", User ID=" . ($this->session->userdata('user_id') ?: 'UNKNOWN') . ", IP=" . $this->input->ip_address() . ", Timestamp=" . australia_datetime());
@@ -561,6 +572,133 @@ class Patient extends MY_Controller
             log_message('error', "PATIENT DELETE FAILED: Database deletion returned 0 affected rows for Patient ID={$patient_id}, Patient Name=" . ($patient['name'] ?: 'UNKNOWN') . ", User=" . ($this->session->userdata('username') ?: 'UNKNOWN') . ", IP=" . $this->input->ip_address() . " at " . australia_datetime());
             echo json_encode(['status' => 'error', 'message' => 'Failed to delete client']);
         }
+    }
+
+    /**
+     * Cancel all future orders for a specific suite when patient is discharged
+     * This is called when a patient's status is manually changed to 'discharged'
+     * 
+     * @param int $suite_id The suite/bed ID
+     * @param string $today Today's date in Y-m-d format
+     * @param string $patient_name Patient name for notification
+     * @return int Number of orders cancelled
+     */
+    private function cancelFutureOrdersForPatientDischarge($suite_id, $today, $patient_name) {
+        // Load notification helper
+        $this->load->helper('notification');
+        
+        $cancelled_count = 0;
+        
+        // Get suite details for notification
+        $suite_details = $this->common_model->fetchRecordsDynamically('suites', ['bed_no'], ['id' => $suite_id]);
+        $suite_name = !empty($suite_details) ? $suite_details[0]['bed_no'] : "Suite $suite_id";
+        
+        // Find all active orders for this suite with date > today (future orders)
+        $this->tenantDb->select('o.order_id, o.date, o.workflow_status, o.status, o.floor_id, o.is_floor_consolidated');
+        $this->tenantDb->from('orders o');
+        $this->tenantDb->where('o.date >', $today);
+        $this->tenantDb->where('o.status !=', 0); // Not already cancelled
+        $this->tenantDb->where_not_in('o.workflow_status', ['cancelled', 'cancelled_duplicate', 'deleted']);
+        $this->tenantDb->group_start();
+            // Suite-specific orders (legacy)
+            $this->tenantDb->where('o.bed_id', $suite_id);
+            $this->tenantDb->or_group_start();
+                // Floor consolidated orders - check suite_order_details
+                $this->tenantDb->where('o.is_floor_consolidated', 1);
+                $this->tenantDb->where("EXISTS (SELECT 1 FROM suite_order_details sd WHERE sd.floor_order_id = o.order_id AND sd.suite_id = $suite_id)", NULL, FALSE);
+            $this->tenantDb->group_end();
+        $this->tenantDb->group_end();
+        
+        $future_orders_query = $this->tenantDb->get();
+        $future_orders = $future_orders_query->result_array();
+        
+        if (empty($future_orders)) {
+            log_message('info', "PATIENT DISCHARGE: No future orders found for suite $suite_name (ID: $suite_id)");
+            return 0;
+        }
+        
+        $notification_dates = [];
+        
+        foreach ($future_orders as $order) {
+            $order_id = $order['order_id'];
+            $order_date = $order['date'];
+            
+            // Check if this is a floor-consolidated order
+            $is_floor_order = isset($order['is_floor_consolidated']) && $order['is_floor_consolidated'] == 1;
+            
+            if ($is_floor_order) {
+                // For floor-consolidated orders:
+                // 1. Delete menu items for this suite from orders_to_patient_options
+                // 2. Delete suite_order_details for this suite
+                // 3. Only cancel entire floor order if no other suites have items
+                
+                // Delete from orders_to_patient_options for this suite
+                $this->tenantDb->where('order_id', $order_id);
+                $this->tenantDb->where('bed_id', $suite_id);
+                $this->tenantDb->delete('orders_to_patient_options');
+                $deleted_items = $this->tenantDb->affected_rows();
+                
+                // Delete from suite_order_details for this suite
+                $this->tenantDb->where('floor_order_id', $order_id);
+                $this->tenantDb->where('suite_id', $suite_id);
+                $this->tenantDb->delete('suite_order_details');
+                
+                log_message('info', "PATIENT DISCHARGE ORDER CANCEL: Removed $deleted_items menu items for suite $suite_name from floor order $order_id (date: $order_date)");
+                
+                // Check if any other suites have items in this floor order
+                $remaining_items = $this->tenantDb->where('order_id', $order_id)
+                    ->count_all_results('orders_to_patient_options');
+                    
+                if ($remaining_items == 0) {
+                    // No items left, cancel the entire floor order
+                    $cancel_data = array(
+                        'status' => 0,
+                        'workflow_status' => 'cancelled',
+                        'date_modified' => australia_datetime()
+                    );
+                    $this->tenantDb->where('order_id', $order_id);
+                    $this->tenantDb->update('orders', $cancel_data);
+                    
+                    log_message('info', "PATIENT DISCHARGE ORDER CANCEL: Entire floor order $order_id cancelled (no remaining items)");
+                }
+                
+                $cancelled_count++;
+                $notification_dates[] = date('d-m-Y', strtotime($order_date));
+                
+            } else {
+                // For suite-specific orders, cancel the entire order
+                $cancel_data = array(
+                    'status' => 0,
+                    'workflow_status' => 'cancelled',
+                    'date_modified' => australia_datetime()
+                );
+                
+                $this->tenantDb->where('order_id', $order_id);
+                $update_result = $this->tenantDb->update('orders', $cancel_data);
+                
+                if ($update_result) {
+                    $cancelled_count++;
+                    $notification_dates[] = date('d-m-Y', strtotime($order_date));
+                    
+                    log_message('info', "PATIENT DISCHARGE ORDER CANCEL: Cancelled order ID $order_id for suite $suite_name (date: $order_date)");
+                }
+            }
+        }
+        
+        // Send notification to Chef about cancelled orders
+        if ($cancelled_count > 0 && function_exists('createNotification')) {
+            $unique_dates = array_unique($notification_dates);
+            $dates_str = implode(', ', $unique_dates);
+            
+            $notification_msg = "Patient Discharged - Orders Cancelled: Patient '{$patient_name}' in {$suite_name} was discharged. {$cancelled_count} future order(s) for date(s): {$dates_str} have been automatically cancelled.";
+            
+            // Send notification (system_id=1 typically means admin/chef notification)
+            createNotification($this->tenantDb, 1, $this->selected_location_id, 'alert', $notification_msg);
+            
+            log_message('info', "NOTIFICATION SENT: Chef notified about $cancelled_count cancelled orders for suite $suite_name due to patient discharge");
+        }
+        
+        return $cancelled_count;
     }
 
     
