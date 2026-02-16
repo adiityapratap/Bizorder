@@ -298,6 +298,7 @@ class Floor_order_model extends CI_Model {
             AND (sd.id IS NULL OR opo.suite_order_detail_id IS NULL OR opo.suite_order_detail_id = 0)
             AND opo.bed_id IS NOT NULL 
             AND opo.bed_id > 0
+            AND (opo.is_cancelled = 0 OR opo.is_cancelled IS NULL)
         ";
         $result = $this->tenantDb->query($query, [$floorOrderId, $floorOrderId]);
         
@@ -651,10 +652,14 @@ class Floor_order_model extends CI_Model {
         
         $orderData['suites'] = $suitesQuery->result_array();
         
-        // Get menu items count
+        // Get menu items count (excluding cancelled items)
         $this->tenantDb->select('COUNT(*) as total_items');
         $this->tenantDb->from('orders_to_patient_options');
         $this->tenantDb->where('order_id', $floorOrderId);
+        $this->tenantDb->group_start();
+        $this->tenantDb->where('is_cancelled', 0);
+        $this->tenantDb->or_where('is_cancelled IS NULL');
+        $this->tenantDb->group_end();
         $itemsQuery = $this->tenantDb->get();
         $orderData['total_menu_items'] = $itemsQuery->row()->total_items;
         
@@ -788,10 +793,12 @@ class Floor_order_model extends CI_Model {
         $CI = &get_instance();
         
         // Get all categories that should be in this floor order using direct query
+        // SOFT DELETE: Exclude cancelled items from category calculation
         $categorySql = "SELECT DISTINCT m2c.category_id 
                         FROM orders_to_patient_options opo 
                         LEFT JOIN menu_to_category m2c ON m2c.menu_id = opo.menu_id 
-                        WHERE opo.order_id = ?";
+                        WHERE opo.order_id = ?
+                        AND (opo.is_cancelled = 0 OR opo.is_cancelled IS NULL)";
         $categoryQuery = $CI->tenantDb->query($categorySql, [$order_id]);
         $orderCategories = $categoryQuery->result_array();
         

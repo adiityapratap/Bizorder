@@ -109,10 +109,14 @@
                                             <i class="ri-file-excel-line"></i> Export Beds
                                         </button>
                                         <button type="button" 
-                                                class="btn btn-warning" 
+                                                class="btn btn-warning me-2" 
                                                 onclick="exportPatientReport()">
                                             <i class="ri-user-line"></i> Patient Report
                                         </button>
+                                        <a href="<?php echo base_url('Orderportal/Reports/cancelledOrders'); ?>" 
+                                           class="btn btn-danger">
+                                            <i class="ri-delete-bin-line"></i> Cancelled Orders
+                                        </a>
                                     </div>
                                 </div>
                             </form>

@@ -122,6 +122,12 @@ function fetchOrderForChef($date = null, $orderId = null) {
         $this->tenantDb->where('o.buttonType', 'sendorder');
     }
 
+    // SOFT DELETE: Exclude cancelled order items from production counts
+    $this->tenantDb->group_start();
+    $this->tenantDb->where('opo.is_cancelled', 0);
+    $this->tenantDb->or_where('opo.is_cancelled IS NULL');
+    $this->tenantDb->group_end();
+
     // FIXED: Include items with category_id (skip orphaned items without menu_id)
     // This is more forgiving for the migration period
     $this->tenantDb->where('opo.menu_id IS NOT NULL');
@@ -362,6 +368,11 @@ function fetchOrderForChef($date = null, $orderId = null) {
    $this->tenantDb->join('menu_details_to_menu_options as md2mo', 'mo.id = md2mo.menu_option_id', 'LEFT');
    $this->tenantDb->join('menu_to_category as m2c', 'm2c.menu_id = opo.menu_id', 'LEFT');
    $this->tenantDb->where('opo.order_id', $orderId);
+   // SOFT DELETE: Exclude cancelled order items
+   $this->tenantDb->group_start();
+   $this->tenantDb->where('opo.is_cancelled', 0);
+   $this->tenantDb->or_where('opo.is_cancelled IS NULL');
+   $this->tenantDb->group_end();
    
    $menuOptionsData = $this->tenantDb->get()->result_array();
    
@@ -425,6 +436,11 @@ function fetchOrderForChef($date = null, $orderId = null) {
         $this->tenantDb->join('menu_to_category as m2c', 'm2c.menu_id = opo.menu_id', 'LEFT');
         $this->tenantDb->where('opo.order_id', $orderId);
         $this->tenantDb->where('sod.status', 'active');
+        // SOFT DELETE: Exclude cancelled order items
+        $this->tenantDb->group_start();
+        $this->tenantDb->where('opo.is_cancelled', 0);
+        $this->tenantDb->or_where('opo.is_cancelled IS NULL');
+        $this->tenantDb->group_end();
         
         $result = $this->tenantDb->get()->result_array();
         // Debug: Query result count
@@ -453,6 +469,11 @@ function fetchOrderForChef($date = null, $orderId = null) {
         $this->tenantDb->join('menu_item_comments as mic', 'mic.bed_id = opo.bed_id AND mic.order_id = opo.order_id AND mic.menu_id = opo.menu_id AND mic.option_id = opo.option_id', 'LEFT');
         $this->tenantDb->join('menu_to_category as m2c', 'm2c.menu_id = opo.menu_id', 'LEFT');
         $this->tenantDb->where('opo.order_id', $orderId);
+        // SOFT DELETE: Exclude cancelled order items
+        $this->tenantDb->group_start();
+        $this->tenantDb->where('opo.is_cancelled', 0);
+        $this->tenantDb->or_where('opo.is_cancelled IS NULL');
+        $this->tenantDb->group_end();
         
         $result = $this->tenantDb->get()->result_array();
        

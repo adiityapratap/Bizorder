@@ -82,6 +82,7 @@ class Reports extends MY_Controller {
                 AND o.status != 0
                 AND s.is_deleted = 0
                 AND s.status = 1
+                AND (opo.is_cancelled = 0 OR opo.is_cancelled IS NULL)
                 GROUP BY o.date
                 ORDER BY o.date ASC";
         
@@ -109,6 +110,7 @@ class Reports extends MY_Controller {
                 AND o.status != 0
                 AND s.is_deleted = 0
                 AND s.status = 1
+                AND (opo.is_cancelled = 0 OR opo.is_cancelled IS NULL)
                 GROUP BY o.date
                 ORDER BY o.date ASC";
         
@@ -136,7 +138,8 @@ class Reports extends MY_Controller {
                     o.workflow_status,
                     o.is_floor_consolidated,
                     o.date as created_at,
-                    COUNT(opo.id) as item_count,
+                    COUNT(CASE WHEN (opo.is_cancelled = 0 OR opo.is_cancelled IS NULL) THEN opo.id ELSE NULL END) as item_count,
+                    COUNT(CASE WHEN opo.is_cancelled = 1 THEN opo.id ELSE NULL END) as cancelled_item_count,
                     CONCAT(u.first_name, ' ', u.last_name) as created_by_name,
                     u.username as created_by_username
                 FROM orders o
@@ -177,6 +180,7 @@ class Reports extends MY_Controller {
         
         // Get order items with suite/bed and menu information
         // ✅ PATIENT ID FIX: JOIN on patient_id to get correct patient at order time
+        // ✅ SOFT DELETE: Exclude cancelled items but show them separately
         $sql = "SELECT opo.*,
                        s.bed_no,
                        s.floor,
@@ -184,12 +188,15 @@ class Reports extends MY_Controller {
                        p.name as patient_name,
                        p.allergies as patient_allergies,
                        md.name as menu_name,
-                       md.description as menu_description
+                       md.description as menu_description,
+                       fc.name as category_name
                 FROM orders_to_patient_options opo
                 LEFT JOIN suites s ON s.id = opo.bed_id
                 LEFT JOIN people p ON p.id = opo.patient_id
                 LEFT JOIN menuDetails md ON md.id = opo.menu_id
+                LEFT JOIN foodmenuconfig fc ON fc.id = opo.category_id AND fc.listtype = 'category'
                 WHERE opo.order_id = ?
+                AND (opo.is_cancelled = 0 OR opo.is_cancelled IS NULL)
                 ORDER BY s.floor, s.bed_no, opo.id";
         
         $query = $this->tenantDb->query($sql, [$order_id]);
@@ -506,5 +513,181 @@ class Reports extends MY_Controller {
         redirect('Orderportal/Reports/viewOrderSnapshot/' . $snapshot['id']);
     }
     
-}
-
+    /**
+     * Cancelled Orders Report - View all orders cancelled due to patient discharge
+     * Shows audit trail of cancelled order items with patient/suite snapshots
+     */
+    public function cancelledOrders() {
+        // Get date range from request or default to last 30 days
+        $from_date = $this->input->get('from_date') ?: date('Y-m-d', strtotime('-30 days'));
+        $to_date = $this->input->get('to_date') ?: date('Y-m-d');
+        $reason_filter = $this->input->get('reason') ?: '';
+        
+        // Fetch cancelled order items
+        $data['cancelled_items'] = $this->getCancelledOrderItems($from_date, $to_date, $reason_filter);
+        
+        // Get summary stats
+        $data['summary'] = $this->getCancelledOrdersSummary($from_date, $to_date);
+        
+        // Get unique cancel reasons for filter dropdown
+        $data['cancel_reasons'] = $this->getUniqueCancelReasons();
+        
+        // Pass filter values to view
+        $data['from_date'] = $from_date;
+        $data['to_date'] = $to_date;
+        $data['reason_filter'] = $reason_filter;
+        
+        // Page title
+        $data['page_title'] = 'Cancelled Orders Report';
+        
+        // Load views
+        $this->load->view('general/header', $data);
+        $this->load->view('Orderportal/Reports/cancelled_orders', $data);
+        $this->load->view('general/footer', $data);
+    }
+    
+    /**
+     * Get cancelled order items with full details
+     */
+    private function getCancelledOrderItems($from_date, $to_date, $reason_filter = '') {
+        $sql = "SELECT 
+                    opo.id,
+                    opo.order_id,
+                    opo.bed_id,
+                    opo.patient_id,
+                    opo.menu_id,
+                    opo.category_id,
+                    opo.option_id,
+                    opo.quantity,
+                    opo.is_cancelled,
+                    opo.cancel_reason,
+                    opo.cancelled_at,
+                    opo.cancelled_by,
+                    opo.patient_name_snapshot,
+                    opo.suite_name_snapshot,
+                    o.date as order_date,
+                    s.bed_no as suite_number,
+                    fmc.name as floor_name,
+                    fc.name as category_name,
+                    md.name as menu_name,
+                    mo.menu_option_name,
+                    CONCAT(u.first_name, ' ', u.last_name) as cancelled_by_name
+                FROM orders_to_patient_options opo
+                LEFT JOIN orders o ON o.order_id = opo.order_id
+                LEFT JOIN suites s ON s.id = opo.bed_id
+                LEFT JOIN foodmenuconfig fmc ON fmc.id = s.floor
+                LEFT JOIN foodmenuconfig fc ON fc.id = opo.category_id AND fc.listtype = 'category'
+                LEFT JOIN menuDetails md ON md.id = opo.menu_id
+                LEFT JOIN menu_options mo ON mo.id = opo.option_id
+                LEFT JOIN Global_users u ON u.id = opo.cancelled_by
+                WHERE opo.is_cancelled = 1
+                AND opo.cancelled_at >= ?
+                AND opo.cancelled_at <= ?";
+        
+        $params = [$from_date . ' 00:00:00', $to_date . ' 23:59:59'];
+        
+        if (!empty($reason_filter)) {
+            $sql .= " AND opo.cancel_reason LIKE ?";
+            $params[] = '%' . $reason_filter . '%';
+        }
+        
+        $sql .= " ORDER BY opo.cancelled_at DESC, opo.order_id, opo.id";
+        
+        $query = $this->tenantDb->query($sql, $params);
+        return $query->result_array();
+    }
+    
+    /**
+     * Get summary statistics for cancelled orders
+     */
+    private function getCancelledOrdersSummary($from_date, $to_date) {
+        $sql = "SELECT 
+                    COUNT(*) as total_cancelled_items,
+                    COUNT(DISTINCT opo.order_id) as affected_orders,
+                    COUNT(DISTINCT opo.bed_id) as affected_suites,
+                    COUNT(DISTINCT opo.patient_id) as affected_patients,
+                    SUM(opo.quantity) as total_quantity_cancelled
+                FROM orders_to_patient_options opo
+                WHERE opo.is_cancelled = 1
+                AND opo.cancelled_at >= ?
+                AND opo.cancelled_at <= ?";
+        
+        $query = $this->tenantDb->query($sql, [$from_date . ' 00:00:00', $to_date . ' 23:59:59']);
+        return $query->row_array();
+    }
+    
+    /**
+     * Get unique cancel reasons for filter dropdown
+     */
+    private function getUniqueCancelReasons() {
+        $sql = "SELECT DISTINCT cancel_reason 
+                FROM orders_to_patient_options 
+                WHERE is_cancelled = 1 
+                AND cancel_reason IS NOT NULL 
+                AND cancel_reason != ''
+                ORDER BY cancel_reason";
+        
+        $query = $this->tenantDb->query($sql);
+        return array_column($query->result_array(), 'cancel_reason');
+    }
+    
+    /**
+     * Export cancelled orders to CSV
+     */
+    public function exportCancelledOrders() {
+        $from_date = $this->input->post('from_date') ?: date('Y-m-d', strtotime('-30 days'));
+        $to_date = $this->input->post('to_date') ?: date('Y-m-d');
+        $reason_filter = $this->input->post('reason') ?: '';
+        
+        $cancelled_items = $this->getCancelledOrderItems($from_date, $to_date, $reason_filter);
+        
+        // Prepare CSV data
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="cancelled_orders_report_' . date('Y-m-d_His') . '.csv"');
+        
+        $output = fopen('php://output', 'w');
+        
+        // CSV Title
+        fputcsv($output, ['Cancelled Orders Report']);
+        fputcsv($output, ['Date Range: ' . date('d M Y', strtotime($from_date)) . ' to ' . date('d M Y', strtotime($to_date))]);
+        fputcsv($output, ['Generated: ' . date('d M Y H:i:s')]);
+        fputcsv($output, []); // Empty row
+        
+        // CSV Headers
+        fputcsv($output, [
+            'Cancelled Date',
+            'Order ID',
+            'Order Date',
+            'Suite/Bed',
+            'Floor',
+            'Patient Name (at cancellation)',
+            'Category',
+            'Menu Item',
+            'Option',
+            'Quantity',
+            'Cancel Reason',
+            'Cancelled By'
+        ]);
+        
+        // CSV Data
+        foreach ($cancelled_items as $item) {
+            fputcsv($output, [
+                $item['cancelled_at'] ? date('d M Y H:i', strtotime($item['cancelled_at'])) : 'N/A',
+                $item['order_id'],
+                $item['order_date'] ? date('d M Y', strtotime($item['order_date'])) : 'N/A',
+                $item['suite_name_snapshot'] ?: $item['suite_number'] ?: 'N/A',
+                $item['floor_name'] ?: 'N/A',
+                $item['patient_name_snapshot'] ?: 'N/A',
+                $item['category_name'] ?: 'N/A',
+                $item['menu_name'] ?: 'N/A',
+                $item['menu_option_name'] ?: 'N/A',
+                $item['quantity'],
+                $item['cancel_reason'] ?: 'N/A',
+                $item['cancelled_by_name'] ?: 'System'
+            ]);
+        }
+        
+        fclose($output);
+        exit;
+    }
+    

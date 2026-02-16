@@ -427,12 +427,19 @@ class Hospitalconfig extends MY_Controller
     }
     
     /**
-     * Cancel all future orders for a specific suite when patient is discharged
+     * Cancel orders for a specific suite when patient is discharged
+     * 
+     * CANCELLATION RULES:
+     * - All future orders (date > today): Cancel all meals
+     * - Same-day orders with discharge after 11am: Cancel LUNCH + DINNER
+     * - Same-day orders with discharge after 2pm: Cancel DINNER only
+     * 
+     * Uses SOFT DELETE (is_cancelled = 1) for reporting and audit trail
      * 
      * @param int $suite_id The suite/bed ID
      * @param string $today Today's date in Y-m-d format
      * @param string $patient_name Patient name for notification
-     * @return int Number of orders cancelled
+     * @return int Number of order items cancelled
      */
     private function cancelFutureOrdersForSuite($suite_id, $today, $patient_name) {
         $cancelled_count = 0;
@@ -441,9 +448,77 @@ class Hospitalconfig extends MY_Controller
         $suite_details = $this->common_model->fetchRecordsDynamically('suites', ['bed_no'], ['id' => $suite_id]);
         $suite_name = !empty($suite_details) ? $suite_details[0]['bed_no'] : "Suite $suite_id";
         
-        // Find all active orders for this suite with date > today (future orders)
-        // Check both bed_id (suite-specific orders) and floor-level orders with suite details
-        $this->tenantDb->select('o.order_id, o.date, o.workflow_status, o.status, o.floor_id');
+        // ═══════════════════════════════════════════════════════════════════
+        // TIME-BASED CANCELLATION LOGIC (Points 5 & 6)
+        // Get current Australia/Sydney time for same-day cancellation rules
+        // ═══════════════════════════════════════════════════════════════════
+        $australiaTime = new DateTime('now', new DateTimeZone('Australia/Sydney'));
+        $currentHour = (int) $australiaTime->format('H');
+        $currentMinute = (int) $australiaTime->format('i');
+        
+        // Category IDs from foodmenuconfig table
+        // BREAKFAST = 3, LUNCH = 5, DINNER = 7
+        $BREAKFAST_CATEGORY_ID = 3;
+        $LUNCH_CATEGORY_ID = 5;
+        $DINNER_CATEGORY_ID = 7;
+        
+        // Determine which categories to cancel for TODAY based on discharge time
+        $categoriesToCancelToday = [];
+        $sameDayCancelReason = '';
+        
+        if ($currentHour < 11) {
+            // Before 11am - cancel LUNCH + DINNER for today (Point 5)
+            $categoriesToCancelToday = [$LUNCH_CATEGORY_ID, $DINNER_CATEGORY_ID];
+            $sameDayCancelReason = 'discharged_before_11am';
+            log_message('info', "DISCHARGE TIME CHECK: Before 11am ($currentHour:$currentMinute) - Will cancel LUNCH + DINNER for today");
+        } elseif ($currentHour < 14) {
+            // Before 2pm (but after 11am) - cancel DINNER only for today (Point 6)
+            $categoriesToCancelToday = [$DINNER_CATEGORY_ID];
+            $sameDayCancelReason = 'discharged_before_2pm';
+            log_message('info', "DISCHARGE TIME CHECK: Before 2pm ($currentHour:$currentMinute) - Will cancel DINNER only for today");
+        } else {
+            // 2pm or later - no same-day cancellation (meals already served)
+            log_message('info', "DISCHARGE TIME CHECK: After 2pm ($currentHour:$currentMinute) - No same-day meal cancellation");
+        }
+        
+        $notification_dates = [];
+        $cancelled_meals = [];
+        
+        // ═══════════════════════════════════════════════════════════════════
+        // STEP 1: CANCEL SAME-DAY ORDERS (Based on time rules - Points 5 & 6)
+        // ═══════════════════════════════════════════════════════════════════
+        if (!empty($categoriesToCancelToday)) {
+            $todayCancelledCount = $this->softCancelOrderItems(
+                $suite_id, 
+                $today, 
+                $categoriesToCancelToday, 
+                $patient_name, 
+                $suite_name, 
+                $sameDayCancelReason
+            );
+            
+            if ($todayCancelledCount > 0) {
+                $cancelled_count += $todayCancelledCount;
+                $notification_dates[] = date('d-m-Y', strtotime($today));
+                
+                // Build meal names for notification
+                foreach ($categoriesToCancelToday as $catId) {
+                    if ($catId == $LUNCH_CATEGORY_ID) $cancelled_meals[] = 'Lunch';
+                    if ($catId == $DINNER_CATEGORY_ID) $cancelled_meals[] = 'Dinner';
+                }
+                
+                $message = "DISCHARGE SAME-DAY CANCEL: Cancelled $todayCancelledCount item(s) for suite $suite_name today (". implode(' & ', $cancelled_meals) .")";
+                log_message('info', $message);
+                echo "$message\n";
+            }
+        }
+        
+        // ═══════════════════════════════════════════════════════════════════
+        // STEP 2: CANCEL ALL FUTURE ORDERS (date > today) - Point 1
+        // ═══════════════════════════════════════════════════════════════════
+        
+        // Find all active orders for this suite with date > today
+        $this->tenantDb->select('o.order_id, o.date, o.workflow_status, o.status, o.floor_id, o.is_floor_consolidated');
         $this->tenantDb->from('orders o');
         $this->tenantDb->where('o.date >', $today);
         $this->tenantDb->where('o.status !=', 0); // Not already cancelled
@@ -461,48 +536,39 @@ class Hospitalconfig extends MY_Controller
         $future_orders_query = $this->tenantDb->get();
         $future_orders = $future_orders_query->result_array();
         
-        if (empty($future_orders)) {
-            $message = "No future orders found for suite $suite_name (ID: $suite_id)";
-            log_message('info', $message);
-            echo "$message\n";
-            return 0;
-        }
-        
-        $notification_dates = [];
-        
-        foreach ($future_orders as $order) {
-            $order_id = $order['order_id'];
-            $order_date = $order['date'];
-            $floor_id = $order['floor_id'];
-            
-            // Check if this is a floor-consolidated order
-            $is_floor_order = isset($order['is_floor_consolidated']) && $order['is_floor_consolidated'] == 1;
-            
-            if ($is_floor_order) {
-                // For floor-consolidated orders, we need to:
-                // 1. Delete menu items for this suite from orders_to_patient_options
-                // 2. Delete suite_order_details for this suite
-                // 3. Only cancel the entire floor order if no other suites have items
+        if (!empty($future_orders)) {
+            foreach ($future_orders as $order) {
+                $order_id = $order['order_id'];
+                $order_date = $order['date'];
                 
-                // Delete from orders_to_patient_options for this suite
-                $this->tenantDb->where('order_id', $order_id);
-                $this->tenantDb->where('bed_id', $suite_id);
-                $this->tenantDb->delete('orders_to_patient_options');
-                $deleted_items = $this->tenantDb->affected_rows();
+                // Soft cancel ALL categories for future orders (no category filter)
+                $futureCancelledCount = $this->softCancelOrderItems(
+                    $suite_id, 
+                    $order_date, 
+                    null, // null = all categories
+                    $patient_name, 
+                    $suite_name, 
+                    'patient_discharged',
+                    $order_id
+                );
                 
-                // Delete from suite_order_details for this suite
-                $this->tenantDb->where('floor_order_id', $order_id);
-                $this->tenantDb->where('suite_id', $suite_id);
-                $this->tenantDb->delete('suite_order_details');
+                if ($futureCancelledCount > 0) {
+                    $cancelled_count += $futureCancelledCount;
+                    $notification_dates[] = date('d-m-Y', strtotime($order_date));
+                    
+                    $message = "DISCHARGE FUTURE CANCEL: Soft-cancelled $futureCancelledCount item(s) for suite $suite_name, order $order_id (date: $order_date)";
+                    log_message('info', $message);
+                    echo "$message\n";
+                }
                 
-                log_message('info', "DISCHARGE ORDER CANCEL: Removed $deleted_items menu items for suite $suite_name from floor order $order_id (date: $order_date)");
-                
-                // Check if any other suites have items in this floor order
-                $remaining_items = $this->tenantDb->where('order_id', $order_id)
+                // Check if any ACTIVE items remain in this order
+                $remaining_items = $this->tenantDb
+                    ->where('order_id', $order_id)
+                    ->where('is_cancelled', 0)
                     ->count_all_results('orders_to_patient_options');
                     
                 if ($remaining_items == 0) {
-                    // No items left, cancel the entire floor order
+                    // No active items left, mark entire order as cancelled
                     $cancel_data = array(
                         'status' => 0,
                         'workflow_status' => 'cancelled',
@@ -511,50 +577,95 @@ class Hospitalconfig extends MY_Controller
                     $this->tenantDb->where('order_id', $order_id);
                     $this->tenantDb->update('orders', $cancel_data);
                     
-                    log_message('info', "DISCHARGE ORDER CANCEL: Entire floor order $order_id cancelled (no remaining items)");
-                }
-                
-                $cancelled_count++;
-                $notification_dates[] = date('d-m-Y', strtotime($order_date));
-                
-            } else {
-                // For suite-specific orders, cancel the entire order
-                $cancel_data = array(
-                    'status' => 0,
-                    'workflow_status' => 'cancelled',
-                    'date_modified' => date('Y-m-d H:i:s')
-                );
-                
-                $this->tenantDb->where('order_id', $order_id);
-                $update_result = $this->tenantDb->update('orders', $cancel_data);
-                
-                if ($update_result) {
-                    $cancelled_count++;
-                    $notification_dates[] = date('d-m-Y', strtotime($order_date));
-                    
-                    $message = "DISCHARGE ORDER CANCEL: Cancelled order ID $order_id for suite $suite_name (date: $order_date)";
-                    log_message('info', $message);
-                    echo "$message\n";
+                    log_message('info', "DISCHARGE ORDER CANCEL: Entire order $order_id marked as cancelled (no remaining active items)");
                 }
             }
+        } else {
+            $message = "No future orders found for suite $suite_name (ID: $suite_id)";
+            log_message('info', $message);
+            echo "$message\n";
         }
         
-        // Send notification to Chef about cancelled orders
+        // ═══════════════════════════════════════════════════════════════════
+        // STEP 3: SEND NOTIFICATION TO CHEF (Point 2)
+        // ═══════════════════════════════════════════════════════════════════
         if ($cancelled_count > 0 && function_exists('createNotification')) {
             $unique_dates = array_unique($notification_dates);
             $dates_str = implode(', ', $unique_dates);
             
-            $notification_msg = "Patient Discharged - Orders Cancelled: Patient '{$patient_name}' in {$suite_name} was discharged. {$cancelled_count} future order(s) for date(s): {$dates_str} have been automatically cancelled.";
+            $meal_info = !empty($cancelled_meals) ? " Today's ". implode(' & ', $cancelled_meals) ." cancelled." : "";
+            
+            $notification_msg = "🚨 Patient Discharged - Orders Cancelled: Patient '{$patient_name}' in {$suite_name} was discharged at " . $australiaTime->format('h:i A') . ".{$meal_info} Total {$cancelled_count} order item(s) for date(s): {$dates_str} have been automatically cancelled.";
             
             // Send notification (system_id=1 typically means admin/chef notification)
             createNotification($this->tenantDb, 1, $this->selected_location_id, 'alert', $notification_msg);
             
-            $message = "NOTIFICATION SENT: Chef notified about $cancelled_count cancelled orders for suite $suite_name";
+            $message = "NOTIFICATION SENT: Chef notified about $cancelled_count cancelled items for suite $suite_name";
             log_message('info', $message);
             echo "$message\n";
         }
         
         return $cancelled_count;
+    }
+    
+    /**
+     * Soft cancel order items for a suite (sets is_cancelled = 1)
+     * 
+     * @param int $suite_id Suite/bed ID
+     * @param string $order_date Order date (Y-m-d)
+     * @param array|null $category_ids Array of category IDs to cancel, or null for all
+     * @param string $patient_name Patient name for snapshot
+     * @param string $suite_name Suite name for snapshot
+     * @param string $cancel_reason Reason for cancellation
+     * @param int|null $order_id Specific order ID (optional)
+     * @return int Number of items cancelled
+     */
+    private function softCancelOrderItems($suite_id, $order_date, $category_ids, $patient_name, $suite_name, $cancel_reason, $order_id = null) {
+        // Build the update query
+        $this->tenantDb->select('opo.id, opo.order_id');
+        $this->tenantDb->from('orders_to_patient_options opo');
+        $this->tenantDb->join('orders o', 'o.order_id = opo.order_id', 'inner');
+        $this->tenantDb->where('opo.bed_id', $suite_id);
+        $this->tenantDb->where('opo.is_cancelled', 0); // Only active items
+        
+        if ($order_id !== null) {
+            $this->tenantDb->where('opo.order_id', $order_id);
+        } else {
+            $this->tenantDb->where('o.date', $order_date);
+        }
+        
+        if ($category_ids !== null && !empty($category_ids)) {
+            $this->tenantDb->where_in('opo.category_id', $category_ids);
+        }
+        
+        $items_query = $this->tenantDb->get();
+        $items_to_cancel = $items_query->result_array();
+        
+        if (empty($items_to_cancel)) {
+            return 0;
+        }
+        
+        // Get item IDs
+        $item_ids = array_column($items_to_cancel, 'id');
+        
+        // Soft delete - update with cancellation info
+        $cancel_data = array(
+            'is_cancelled' => 1,
+            'cancel_reason' => $cancel_reason,
+            'cancelled_at' => date('Y-m-d H:i:s'),
+            'cancelled_by' => null, // System/automatic cancellation
+            'patient_name_snapshot' => $patient_name,
+            'suite_name_snapshot' => $suite_name
+        );
+        
+        $this->tenantDb->where_in('id', $item_ids);
+        $this->tenantDb->update('orders_to_patient_options', $cancel_data);
+        
+        $affected = $this->tenantDb->affected_rows();
+        
+        log_message('info', "SOFT CANCEL: Updated $affected items (IDs: " . implode(',', $item_ids) . ") with is_cancelled=1, reason=$cancel_reason");
+        
+        return $affected;
     }
     
     /**
