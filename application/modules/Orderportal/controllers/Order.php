@@ -609,6 +609,9 @@ class Order extends MY_Controller
         
         $suiteNumber = $bedExists[0]['bed_no'];
         
+        // Get current user role for permission checks
+        $userRole = $this->ion_auth->get_users_groups()->row()->id;
+        
         // CRITICAL CHECK: Prevent modifying delivered/paid orders (but allow new orders if cancelled)
         // Query ALL orders for this floor+date, regardless of status (don't use getFloorOrder which filters by status=1)
         $this->tenantDb->select('order_id, workflow_status, status, is_delivered, created_at');
@@ -665,6 +668,21 @@ class Order extends MY_Controller
             } else {
                 // For all other statuses, use existing order (update)
                 $floorOrderId = $existingOrder['order_id'];
+                
+                // PATIENT EDIT RESTRICTION: Check if this suite already has an order sent
+                // Patients (role 4) cannot edit orders once they click "send order" button
+                // Nurses (role 3) have NO restrictions and can edit anytime
+                if ($userRole == 4) {
+                    // Check if this specific suite already has items in this order (meaning order was already sent)
+                    $existingSuiteOrder = $this->floor_order_model->getSuiteOrderDetail($floorOrderId, $bedId);
+                    
+                    if ($existingSuiteOrder) {
+                        log_message('info', "PATIENT EDIT BLOCKED: Patient (User ID={$userId}) attempted to edit suite {$bedId} order that was already sent. Floor Order ID={$floorOrderId}, Date={$orderDate}, IP=" . $this->input->ip_address() . " at " . australia_datetime());
+                        $this->session->set_flashdata('error', 'You cannot edit this order. Once an order is submitted, it cannot be modified. Please contact a nurse if you need to make changes.');
+                        redirect('Orderportal/Home/index');
+                        return;
+                    }
+                }
             }
         }
         
@@ -1132,6 +1150,15 @@ class Order extends MY_Controller
          }
          
          if(isset($existingOrderData) && !empty($existingOrderData)){
+             
+             // PATIENT EDIT RESTRICTION: Patients (role 4) cannot edit orders once they click "send order" button
+             // Nurses (role 3) have NO restrictions and can edit anytime
+             if ($userRole == 4) {
+                 log_message('info', "PATIENT EDIT BLOCKED (LEGACY): Patient (User ID={$userId}) attempted to edit suite {$bedId} order that was already sent. Order ID=" . reset($existingOrderData)['order_id'] . ", Date={$orderDate}, IP=" . $this->input->ip_address() . " at " . australia_datetime());
+                 $this->session->set_flashdata('error', 'You cannot edit this order. Once an order is submitted, it cannot be modified. Please contact a nurse if you need to make changes.');
+                 redirect('Orderportal/Home/index');
+                 return;
+             }
              
             $orderUpdateData['updated_by'] = $this->session->userdata('user_id');
             // buttonType is already forced to 'sendorder' earlier in the function
