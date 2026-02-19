@@ -690,4 +690,4 @@ class Reports extends MY_Controller {
         fclose($output);
         exit;
     }
-    
+}

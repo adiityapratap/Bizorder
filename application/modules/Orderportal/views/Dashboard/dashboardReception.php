@@ -836,7 +836,7 @@
         </div>
 
         <!-- Allergen Disclaimer Modal -->
-        <div id="allergen-disclaimer-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden transition-opacity duration-300 z-50">
+         <div id="allergen-disclaimer-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden transition-opacity duration-300 z-50">
             <div class="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="allergen-disclaimer-modal-content">
                 <div class="flex items-center justify-center mb-6">
                     <i class="fa-solid fa-triangle-exclamation text-4xl text-red-600 mr-3"></i>
@@ -851,7 +851,7 @@
                     <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
                         <p class="font-semibold text-red-900 mb-2">Common allergens present in our kitchen include, but are not limited to:</p>
                         <p class="text-red-800">
-                            Seafood, Fish, Crustacea, Egg, Gluten, Peanuts, Tree Nuts, Sesame, Dairy, Soy, Milk, Lupin, and Cereals containing gluten (such as wheat, rye, barley, oats, and spelt).
+                            Seafood, Fish, Crustacea/Molluscs, Egg, Gluten, Peanuts, Tree Nuts, Sesame, Dairy, Soy, Milk, Lupin, Sulphites and Cereals containing gluten (such as wheat, rye, barley, oats, and spelt).
                         </p>
                     </div>
                     
@@ -859,8 +859,12 @@
                         If you have any food allergies or sensitivities, please notify your nursing staff, or a member of our staff, prior to ordering and we will endeavour to source a remedy. Otherwise we strongly suggest you seek professional advice from your healthcare provider before ordering.
                     </p>
                     
+                    <p class="text-base leading-relaxed">
+                        <strong>Café Zenn</strong> recommends for optimal safety and quality consuming all hot or perishable items immediately. <strong>Café Zenn</strong> wishes to advise that once food is served or collected, the customer assumes full responsibility for its safe handling and storage.
+                    </p>
+                    
                     <p class="text-base leading-relaxed font-semibold">
-                        By proceeding with your order, you acknowledge and accept this conditional circumstances.
+                        By proceeding with your order, you acknowledge and accept these conditional circumstances.
                     </p>
                     
                     <p class="text-base leading-relaxed text-center italic">
@@ -878,6 +882,7 @@
                 </div>
             </div>
         </div>
+       
 
         <!-- Loader Overlay -->
         <div id="loader" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-50">
